@@ -159,6 +159,8 @@ public final class AssetLibrary {
         result.put("successfulLoads", metrics.successfulLoads());
         result.put("failedLoads", metrics.failedLoads());
         result.put("trackedNativeSources", runtime.trackedSourceCount());
+        result.put("trackedTextureImages", runtime.trackedTextureImageCount());
+        result.put("textureMemoryEstimateBytes", runtime.textureMemoryEstimateBytes());
         result.put("usage", metrics.snapshot());
         return result;
     }

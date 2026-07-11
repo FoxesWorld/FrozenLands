@@ -11,18 +11,20 @@ import com.jme3.scene.Spatial;
 import com.jme3.texture.Texture;
 import org.slf4j.Logger;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
+/** Internal native backend for loading assets and managing runtime cache keys. */
 final class AssetRuntimeBackend {
     private final AssetManager backend;
     private final Logger logger;
     private final AssetUsageMetrics metrics;
-    private final ConcurrentMap<String, Set<AssetKey<?>>> keysBySource = new ConcurrentHashMap<>();
+    private final TextureMemoryTracker textureMemory = new TextureMemoryTracker();
+    private final ConcurrentMap<String, Set<AssetKey<?>>> keysBySource =
+            new ConcurrentHashMap<>();
 
     AssetRuntimeBackend(AssetManager backend, Logger logger, AssetUsageMetrics metrics) {
         this.backend = Objects.requireNonNull(backend, "backend");
@@ -56,6 +58,8 @@ final class AssetRuntimeBackend {
                 key,
                 () -> backend.loadTexture(key)
         );
+        textureMemory.track(source, nativeTexture);
+
         Texture result = nativeTexture.clone();
         applyTextureOptions(result, options);
         return result;
@@ -109,26 +113,35 @@ final class AssetRuntimeBackend {
 
     int evict(String source) {
         Set<AssetKey<?>> keys = keysBySource.remove(source);
-        if (keys == null || keys.isEmpty()) {
-            return 0;
-        }
         int removed = 0;
-        for (AssetKey<?> key : keys) {
-            if (deleteFromCache(key)) {
-                removed++;
+        if (keys != null) {
+            for (AssetKey<?> key : keys) {
+                if (deleteFromCache(key)) {
+                    removed++;
+                }
             }
         }
+        textureMemory.release(source);
         return removed;
     }
 
     void clearCache() {
         backend.clearCache();
         keysBySource.clear();
+        textureMemory.clear();
         logger.info("FrozenLands asset runtime cache cleared");
     }
 
     int trackedSourceCount() {
         return keysBySource.size();
+    }
+
+    int trackedTextureImageCount() {
+        return textureMemory.imageCount();
+    }
+
+    long textureMemoryEstimateBytes() {
+        return textureMemory.estimatedBytes();
     }
 
     private AssetKey<?> key(AssetLibrary.Type type, String source) {

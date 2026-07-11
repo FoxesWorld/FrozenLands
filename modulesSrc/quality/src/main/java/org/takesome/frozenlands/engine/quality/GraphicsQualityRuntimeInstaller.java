@@ -23,8 +23,21 @@ public final class GraphicsQualityRuntimeInstaller implements EngineRuntimeInsta
         context.findService(Shaders.class)
                 .ifPresent(shaders -> quality.registerTarget(new ShaderQualityTarget(shaders)));
 
+        QualityFrameSamplerState sampler = new QualityFrameSamplerState(context);
+        context.appStateManager().attach(sampler);
+        QualityDiagnosticsService diagnostics = new QualityDiagnosticsService(
+                context,
+                quality,
+                sampler
+        );
+
         context.registerService(GraphicsQualityService.class, quality);
-        context.getModuleRegistry().register(new GraphicsQualityModule(quality), context);
+        context.registerService(QualityDiagnosticsService.class, diagnostics);
+        context.registerService(QualityFrameSamplerState.class, sampler);
+        context.getModuleRegistry().register(
+                new GraphicsQualityModule(quality, diagnostics),
+                context
+        );
         quality.apply(catalog.defaultPreset());
     }
 }

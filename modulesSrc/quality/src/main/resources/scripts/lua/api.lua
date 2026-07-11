@@ -3,6 +3,7 @@ local M = {
   id = "engine.quality",
   commands = {
     "status",
+    "profile.status",
     "preset.list",
     "preset.apply",
     "custom.apply"
@@ -15,6 +16,10 @@ end
 
 function M.status()
   return M.call("status")
+end
+
+function M.profile()
+  return M.call("profile.status")
 end
 
 function M.presets()

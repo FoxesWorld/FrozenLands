@@ -15,10 +15,15 @@ public final class GraphicsQualityModule implements EngineModule {
     public static final String ID = "engine.quality";
 
     private final GraphicsQualityService quality;
+    private final QualityDiagnosticsService diagnostics;
     private final Map<String, ModuleCommand> commands = new LinkedHashMap<>();
 
-    public GraphicsQualityModule(GraphicsQualityService quality) {
+    public GraphicsQualityModule(
+            GraphicsQualityService quality,
+            QualityDiagnosticsService diagnostics
+    ) {
         this.quality = quality;
+        this.diagnostics = diagnostics;
         registerCommands();
     }
 
@@ -29,7 +34,7 @@ public final class GraphicsQualityModule implements EngineModule {
 
     @Override
     public String description() {
-        return "Centralized FrozenLands graphics quality profiles and runtime policy.";
+        return "Centralized graphics quality profiles and runtime diagnostics.";
     }
 
     @Override
@@ -45,6 +50,11 @@ public final class GraphicsQualityModule implements EngineModule {
     private void registerCommands() {
         commands.put("status", ModuleCommand.of(
                 "status",
+                "Return the complete runtime quality dashboard.",
+                arguments -> diagnostics.status()
+        ));
+        commands.put("profile.status", ModuleCommand.of(
+                "profile.status",
                 "Return the active quality profile and target state.",
                 arguments -> quality.status()
         ));
