@@ -1,6 +1,9 @@
 {
   "weather": {
     "autoStartSnow": true,
+    "initialIntensity": 1.0,
+    "initialPreset": "",
+    "transitionSeconds": 5.0,
     "initialWind": {
       "x": 0.75,
       "y": 0.0,

@@ -1,6 +1,6 @@
 package org.takesome.frozenlands.engine.weather.snow;
 
-import com.jme3.asset.AssetManager;
+import org.takesome.frozenlands.engine.assets.AssetLibrary;
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Random;
 
 public final class SnowPrecipitationSystem {
-    private final AssetManager assetManager;
+    private final AssetLibrary assets;
     private final Node root = new Node("weather.snow.root");
     private final List<Snowflake> flakes = new ArrayList<>();
     private final Random random = new Random();
@@ -37,13 +37,15 @@ public final class SnowPrecipitationSystem {
     private FloatBuffer texCoordBuffer;
     private IntBuffer indexBuffer;
     private boolean running;
+    private float intensity = 1f;
+    private int activeFlakeCount;
 
-    public SnowPrecipitationSystem(AssetManager assetManager) {
-        this.assetManager = assetManager;
+    public SnowPrecipitationSystem(AssetLibrary assets) {
+        this.assets = assets;
     }
 
-    public SnowPrecipitationSystem(AssetManager assetManager, Config initialConfig) {
-        this.assetManager = assetManager;
+    public SnowPrecipitationSystem(AssetLibrary assets, Config initialConfig) {
+        this.assets = assets;
         setConfig(initialConfig);
     }
 
@@ -64,14 +66,34 @@ public final class SnowPrecipitationSystem {
     }
 
     public int flakeCount() {
+        return activeFlakeCount;
+    }
+
+    public int allocatedFlakeCount() {
         return flakes.size();
+    }
+
+    public float intensity() {
+        return intensity;
+    }
+
+    public void setIntensity(float intensity) {
+        int previousActive = activeFlakeCount;
+        this.intensity = clampIntensity(intensity);
+        updateActiveFlakeCount();
+        for (int index = previousActive; index < activeFlakeCount; index++) {
+            flakes.get(index).reset(random, anchor, config);
+        }
+        root.setCullHint(running && activeFlakeCount > 0
+                ? Spatial.CullHint.Inherit
+                : Spatial.CullHint.Always);
     }
 
     public void start() {
         running = true;
-        root.setCullHint(Spatial.CullHint.Inherit);
-        for (Snowflake flake : flakes) {
-            flake.reset(random, anchor, config);
+        root.setCullHint(activeFlakeCount > 0 ? Spatial.CullHint.Inherit : Spatial.CullHint.Always);
+        for (int index = 0; index < activeFlakeCount; index++) {
+            flakes.get(index).reset(random, anchor, config);
         }
     }
 
@@ -98,13 +120,14 @@ public final class SnowPrecipitationSystem {
     }
 
     public void update(float tpf, Vector3f anchorPosition, Camera camera) {
-        if (!running || anchorPosition == null || camera == null) {
+        if (!running || activeFlakeCount <= 0 || anchorPosition == null || camera == null) {
             return;
         }
 
         anchor.set(anchorPosition);
         float killY = anchor.y + config.killBelowHeight();
-        for (Snowflake flake : flakes) {
+        for (int index = 0; index < activeFlakeCount; index++) {
+            Snowflake flake = flakes.get(index);
             if (!flake.update(tpf, wind, killY)) {
                 flake.reset(random, anchor, config);
             }
@@ -122,6 +145,7 @@ public final class SnowPrecipitationSystem {
         while (flakes.size() > safeCount) {
             flakes.remove(flakes.size() - 1);
         }
+        updateActiveFlakeCount();
         rebuildMesh();
     }
 
@@ -162,7 +186,7 @@ public final class SnowPrecipitationSystem {
         mesh.updateBound();
 
         geometry = new Geometry("weather.snow.geometry", mesh);
-        geometry.setMaterial(SnowMaterialFactory.create(assetManager, config.texture()));
+        geometry.setMaterial(SnowMaterialFactory.create(assets, config.texture()));
         geometry.setQueueBucket(RenderQueue.Bucket.Transparent);
         geometry.setShadowMode(RenderQueue.ShadowMode.Off);
         root.attachChild(geometry);
@@ -180,8 +204,12 @@ public final class SnowPrecipitationSystem {
         positionBuffer.clear();
         colorBuffer.clear();
 
-        for (Snowflake flake : flakes) {
-            writeFlake(flake);
+        for (int index = 0; index < flakes.size(); index++) {
+            if (index < activeFlakeCount) {
+                writeFlake(flakes.get(index));
+            } else {
+                writeHiddenFlake();
+            }
         }
 
         positionBuffer.flip();
@@ -211,7 +239,31 @@ public final class SnowPrecipitationSystem {
 
     private void writeVertex(Snowflake flake, float dx, float dy, float dz) {
         positionBuffer.put(flake.position.x + dx).put(flake.position.y + dy).put(flake.position.z + dz);
-        colorBuffer.put(1f).put(1f).put(1f).put(flake.visibleAlpha());
+        float alphaScale = 0.35f + 0.65f * intensity;
+        colorBuffer.put(1f).put(1f).put(1f).put(flake.visibleAlpha() * alphaScale);
+    }
+
+    private void writeHiddenFlake() {
+        for (int vertex = 0; vertex < 4; vertex++) {
+            positionBuffer.put(anchor.x).put(anchor.y).put(anchor.z);
+            colorBuffer.put(1f).put(1f).put(1f).put(0f);
+        }
+    }
+
+    private void updateActiveFlakeCount() {
+        activeFlakeCount = effectiveFlakeCount(flakes.size(), intensity);
+    }
+
+    public static int effectiveFlakeCount(int allocated, float intensity) {
+        int safeAllocated = Math.max(0, allocated);
+        return Math.max(0, Math.min(safeAllocated, Math.round(safeAllocated * clampIntensity(intensity))));
+    }
+
+    private static float clampIntensity(float value) {
+        if (!Float.isFinite(value)) {
+            return 0f;
+        }
+        return Math.max(0f, Math.min(1f, value));
     }
 
     public record Config(

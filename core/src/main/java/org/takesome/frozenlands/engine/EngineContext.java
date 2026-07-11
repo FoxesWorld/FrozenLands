@@ -9,6 +9,7 @@ import com.jme3.renderer.Camera;
 import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Node;
 import org.slf4j.Logger;
+import org.takesome.frozenlands.engine.assets.AssetLibrary;
 import org.takesome.frozenlands.engine.modules.ModuleRegistry;
 import org.takesome.frozenlands.engine.providers.ProviderRegistry;
 import org.takesome.frozenlands.engine.services.EngineServicePool;
@@ -23,6 +24,7 @@ public interface EngineContext {
     ViewPort getViewPort();
     FilterPostProcessor getFpp();
     AssetManager getAssetManager();
+    AssetLibrary assets();
     Map getConfig();
     AppStateManager appStateManager();
     InputManager getInputManager();

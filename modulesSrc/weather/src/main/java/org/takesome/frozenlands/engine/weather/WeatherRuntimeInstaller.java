@@ -16,10 +16,6 @@ public final class WeatherRuntimeInstaller implements EngineRuntimeInstaller {
 
     @Override
     public void install(EngineContext context) {
-        WeatherModule weatherModule = new WeatherModule();
-        context.getModuleRegistry().register(weatherModule, context);
-        if (weatherModule.service() != null) {
-            context.registerService(WeatherService.class, weatherModule.service());
-        }
+        context.getModuleRegistry().register(new WeatherModule(), context);
     }
 }

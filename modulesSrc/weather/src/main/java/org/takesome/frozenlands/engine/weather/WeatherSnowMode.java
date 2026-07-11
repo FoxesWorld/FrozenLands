@@ -4,11 +4,23 @@ import org.takesome.frozenlands.engine.weather.snow.SnowPrecipitationSystem;
 
 import java.util.Locale;
 
+/** Compatibility snow modes expressed through the canonical intensity scale. */
 public enum WeatherSnowMode {
-    LIGHT,
-    DEFAULT,
-    BLIZZARD;
+    LIGHT(0.30f),
+    DEFAULT(0.65f),
+    BLIZZARD(1.00f);
 
+    private final WeatherIntensity intensity;
+
+    WeatherSnowMode(float intensity) {
+        this.intensity = WeatherIntensity.of(intensity);
+    }
+
+    public WeatherIntensity intensity() {
+        return intensity;
+    }
+
+    /** Retained for older callers that still require a concrete snow config. */
     public SnowPrecipitationSystem.Config config(SnowPrecipitationSystem.Config current) {
         SnowPrecipitationSystem.Config target = switch (this) {
             case LIGHT -> SnowPrecipitationSystem.Config.light();

@@ -11,6 +11,7 @@ import com.jme3.renderer.Camera;
 import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Node;
 import org.slf4j.Logger;
+import org.takesome.frozenlands.engine.assets.AssetLibrary;
 import org.takesome.frozenlands.FrozenLands;
 import org.takesome.frozenlands.engine.core.CoreModule;
 import org.takesome.frozenlands.engine.core.console.ConsoleCursorPolicyState;
@@ -35,6 +36,7 @@ public class Kernel extends BaseAppState implements EngineContext {
     private final Logger logger;
     private final Map CONFIG;
     private final ProviderRegistry providerRegistry;
+    private final AssetLibrary assetLibrary;
     private final ModuleRegistry moduleRegistry;
     private final CoreModule coreModule;
     private final EngineTaskPool taskPool;
@@ -51,6 +53,7 @@ public class Kernel extends BaseAppState implements EngineContext {
         this.CONFIG = frozenLands.getCONFIG();
         this.logger = frozenLands.getLogger();
         this.providerRegistry = new ProviderRegistry();
+        this.assetLibrary = new AssetLibrary(frozenLands.getAssetManager(), logger);
         this.moduleRegistry = new ModuleRegistry();
         this.servicePool = new EngineServicePool(logger);
         this.taskPool = new EngineTaskPool(this);
@@ -191,6 +194,11 @@ public class Kernel extends BaseAppState implements EngineContext {
     @Override
     public AssetManager getAssetManager() {
         return frozenLands.getAssetManager();
+    }
+
+    @Override
+    public AssetLibrary assets() {
+        return assetLibrary;
     }
 
     @Override

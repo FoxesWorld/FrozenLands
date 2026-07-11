@@ -6,16 +6,23 @@ import org.takesome.frozenlands.engine.weather.snow.SnowPrecipitationSystem;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/** Runtime effects snapshot layered on top of the canonical weather state. */
 public record WeatherEnvironmentState(
         boolean initialized,
         boolean autoStartSnow,
         boolean snowRunning,
         int flakes,
+        int allocatedFlakes,
+        String preset,
+        WeatherIntensity intensity,
         Vector3f wind,
         Vector3f anchor,
+        long revision,
         SnowPrecipitationSystem.Config snowConfig
 ) {
     public WeatherEnvironmentState {
+        preset = preset == null ? "" : preset;
+        intensity = intensity == null ? WeatherIntensity.NONE : intensity;
         wind = wind == null ? new Vector3f() : wind.clone();
         anchor = anchor == null ? new Vector3f() : anchor.clone();
     }
@@ -34,10 +41,16 @@ public record WeatherEnvironmentState(
         Map<String, Object> status = new LinkedHashMap<>();
         status.put("initialized", initialized);
         status.put("autoStartSnow", autoStartSnow);
+        status.put("precipitationActive", snowRunning);
         status.put("snowRunning", snowRunning);
         status.put("flakes", flakes);
+        status.put("allocatedFlakes", allocatedFlakes);
+        status.put("preset", preset);
+        status.put("intensity", intensity.value());
+        status.put("intensityPercent", intensity.percent());
         status.put("wind", WeatherPayloads.vectorMap(wind));
         status.put("anchor", WeatherPayloads.vectorMap(anchor));
+        status.put("revision", revision);
         if (snowConfig != null) {
             status.put("snowConfig", configMap(snowConfig));
         }
@@ -46,19 +59,27 @@ public record WeatherEnvironmentState(
 
     public static WeatherEnvironmentState from(
             boolean initialized,
-            boolean autoStartSnow,
+            WeatherRuntimeConfig runtimeConfig,
+            WeatherState weatherState,
             SnowPrecipitationSystem snow,
-            Vector3f initialWind,
             Vector3f anchor
     ) {
+        WeatherRuntimeConfig config = runtimeConfig == null
+                ? WeatherRuntimeConfig.defaultConfig()
+                : runtimeConfig;
+        WeatherState state = weatherState == null ? config.initialState() : weatherState;
         return new WeatherEnvironmentState(
                 initialized,
-                autoStartSnow,
-                snow != null && snow.running(),
+                config.autoStartSnow(),
+                snow != null && snow.running() && snow.flakeCount() > 0,
                 snow == null ? 0 : snow.flakeCount(),
-                snow == null ? initialWind : snow.wind(),
+                snow == null ? 0 : snow.allocatedFlakeCount(),
+                state.preset(),
+                state.intensity(),
+                snow == null ? state.wind() : snow.wind(),
                 anchor,
-                snow == null ? null : snow.config()
+                state.revision(),
+                snow == null ? config.snowConfig() : snow.config()
         );
     }
 

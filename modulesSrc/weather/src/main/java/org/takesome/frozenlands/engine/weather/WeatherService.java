@@ -9,26 +9,45 @@ import org.takesome.frozenlands.engine.EngineContext;
 import org.takesome.frozenlands.engine.player.Player;
 import org.takesome.frozenlands.engine.weather.snow.SnowPrecipitationSystem;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * JME weather-effects adapter.
+ *
+ * <p>This state no longer owns weather semantics. It consumes the canonical
+ * {@link WeatherState} published by {@link WeatherController} and translates it
+ * into snow particles, wind and scene attachment.</p>
+ */
 public final class WeatherService extends BaseAppState {
     private final EngineContext context;
+    private final WeatherController controller;
+    private final WeatherRuntimeConfig runtimeConfig;
     private final Node weatherRoot = new Node("weather.root");
     private final Vector3f anchor = new Vector3f();
-    private final Vector3f initialWind = new Vector3f();
-    private final WeatherRuntimeConfig runtimeConfig;
+    private final AutoCloseable stateSubscription;
 
+    private volatile WeatherState currentState;
     private SnowPrecipitationSystem snow;
-    private AutoCloseable snowStartedSubscription;
-    private AutoCloseable snowStoppedSubscription;
-    private AutoCloseable snowDensitySubscription;
-    private AutoCloseable windChangedSubscription;
+    private long appliedRevision = -1L;
     private boolean initialized;
 
-    public WeatherService(EngineContext context) {
+    public WeatherService(
+            EngineContext context,
+            WeatherController controller,
+            WeatherRuntimeConfig runtimeConfig
+    ) {
         this.context = context;
-        this.runtimeConfig = WeatherRuntimeConfig.load(context);
-        this.initialWind.set(runtimeConfig.initialWind());
+        this.controller = controller;
+        this.runtimeConfig = runtimeConfig == null
+                ? WeatherRuntimeConfig.defaultConfig()
+                : runtimeConfig;
+        this.currentState = controller.snapshot();
+        this.stateSubscription = context.getModuleRegistry().getEventBus().subscribe(
+                WeatherEvents.WEATHER_STATE_CHANGED,
+                this::onWeatherStateChanged,
+                false
+        );
     }
 
     @Override
@@ -36,15 +55,10 @@ public final class WeatherService extends BaseAppState {
         if (weatherRoot.getParent() == null) {
             context.getRootNode().attachChild(weatherRoot);
         }
-        snow = new SnowPrecipitationSystem(context.getAssetManager(), runtimeConfig.snowConfig());
-        snow.setWind(initialWind);
+        snow = new SnowPrecipitationSystem(context.assets(), runtimeConfig.snowConfig());
         weatherRoot.attachChild(snow.root());
-        subscribeEvents();
         initialized = true;
-        if (runtimeConfig.autoStartSnow()) {
-            snow.start();
-        }
-        publishWeatherState(runtimeConfig.autoStartSnow() ? "initialized-auto-snow" : "initialized");
+        applyState(currentState, "effects-initialized");
     }
 
     @Override
@@ -59,9 +73,9 @@ public final class WeatherService extends BaseAppState {
     public WeatherEnvironmentState snapshot() {
         return WeatherEnvironmentState.from(
                 initialized,
-                runtimeConfig.autoStartSnow(),
+                runtimeConfig,
+                currentState,
                 snow,
-                initialWind,
                 anchor
         );
     }
@@ -81,83 +95,42 @@ public final class WeatherService extends BaseAppState {
         }
     }
 
-    private void subscribeEvents() {
-        snowStartedSubscription = context.getModuleRegistry().getEventBus().subscribe(WeatherEvents.SNOW_STARTED, this::onSnowStarted, true);
-        snowStoppedSubscription = context.getModuleRegistry().getEventBus().subscribe(WeatherEvents.SNOW_STOPPED, this::onSnowStopped, true);
-        snowDensitySubscription = context.getModuleRegistry().getEventBus().subscribe(WeatherEvents.SNOW_DENSITY_CHANGED, this::onSnowDensityChanged, true);
-        windChangedSubscription = context.getModuleRegistry().getEventBus().subscribe(WeatherEvents.WIND_CHANGED, this::onWindChanged, true);
-    }
-
-    private void onSnowStarted(Map<String, Object> event) {
-        if (snow == null) {
-            return;
-        }
+    private void onWeatherStateChanged(Map<String, Object> event) {
         Map<String, Object> payload = WeatherPayloads.payload(event);
-        applySnowMode(WeatherPayloads.string(payload, "mode", ""));
-        snow.start();
-        publishWeatherState("snow-started");
-    }
-
-    private void onSnowStopped(Map<String, Object> event) {
-        if (snow == null) {
-            return;
-        }
-        snow.stop();
-        publishWeatherState("snow-stopped");
-    }
-
-    private void onSnowDensityChanged(Map<String, Object> event) {
-        if (snow == null) {
-            return;
-        }
-        Map<String, Object> payload = WeatherPayloads.payload(event);
-        String mode = WeatherPayloads.string(payload, "mode", "");
-        if (!mode.isBlank()) {
-            applySnowMode(mode);
-        } else {
-            snow.setConfig(SnowPrecipitationSystem.Config.from(payload, snow.config()));
-        }
-        if (WeatherPayloads.bool(payload, "running", snow.running())) {
-            snow.start();
-        }
-        publishWeatherState("snow-density-changed");
-    }
-
-    private void onWindChanged(Map<String, Object> event) {
-        Map<String, Object> payload = WeatherPayloads.payload(event);
-        Vector3f nextWind = WeatherPayloads.vector(payload, Vector3f.ZERO);
-        initialWind.set(nextWind);
+        WeatherState state = controller.snapshot();
+        currentState = state;
         if (snow != null) {
-            snow.setWind(nextWind);
+            applyState(state, WeatherPayloads.string(payload, "reason", "weather-state-changed"));
         }
-        publishWeatherState("wind-changed");
     }
 
-    private void applySnowMode(String mode) {
-        if (snow == null || mode == null || mode.isBlank()) {
+    private void applyState(WeatherState state, String reason) {
+        if (snow == null || state == null || appliedRevision == state.revision()) {
             return;
         }
-        WeatherSnowMode snowMode = WeatherSnowMode.from(mode);
-        if (snowMode == null) {
-            context.getLogger().warn("Unknown weather snow mode: {}", mode);
-            return;
+        snow.setWind(state.wind());
+        snow.setIntensity(state.intensity().value());
+        if (state.precipitationActive() && state.intensity().active()) {
+            snow.start();
+        } else {
+            snow.stop();
         }
-        snow.setConfig(snowMode.config(snow.config()));
-    }
 
-    private void publishWeatherState(String reason) {
-        Map<String, Object> payload = snapshot().toMap();
+        appliedRevision = state.revision();
+        Map<String, Object> payload = new LinkedHashMap<>(snapshot().toMap());
         payload.put("reason", reason);
-        context.getModuleRegistry().publishEvent(WeatherEvents.WEATHER_STATE_CHANGED, payload);
-        context.getModuleRegistry().publishEvent(WeatherEvents.WEATHER_ENVIRONMENT_CHANGED, payload);
+        payload.put("state", state.toMap());
+        context.getModuleRegistry().publishEvent(
+                WeatherEvents.WEATHER_EFFECTS_APPLIED,
+                payload,
+                WeatherModule.ID,
+                Map.of("adapter", "snow")
+        );
     }
 
     @Override
     protected void cleanup(Application app) {
-        close(snowStartedSubscription);
-        close(snowStoppedSubscription);
-        close(snowDensitySubscription);
-        close(windChangedSubscription);
+        close(stateSubscription);
         weatherRoot.removeFromParent();
         snow = null;
         initialized = false;
@@ -182,5 +155,4 @@ public final class WeatherService extends BaseAppState {
         } catch (Exception ignored) {
         }
     }
-
 }

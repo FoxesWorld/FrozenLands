@@ -4,7 +4,7 @@
   "modulePath": "modulesSrc/weather",
   "id": "engine.weather",
   "type": "runtime",
-  "description": "Weather runtime module: Frostpunk-style snow precipitation, wind and weather state API.",
+  "description": "Canonical event-driven weather module: preset, precipitation, normalized intensity, wind and rendering adapters.",
   "project": {
     "id": "takesome.frozenlands",
     "name": "Take Some() Frozen Lands",
@@ -13,10 +13,16 @@
     "moduleLayer": "runtime",
     "sourceRoot": "modulesSrc/weather"
   },
+  "dependencies": [
+    "engine.core",
+    "engine.sky",
+    "engine.world",
+    "engine.player"
+  ],
   "lua": {
     "api": "src/main/resources/scripts/lua/api.lua",
     "events": "src/main/resources/scripts/lua/events.lua",
-    "usage": "local weather = require('engine.weather'); weather.start_snow()"
+    "usage": "local weather = require('engine.weather'); weather.intensity.set(0.65)"
   },
   "runtime": {
     "configs": {
