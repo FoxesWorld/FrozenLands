@@ -162,9 +162,11 @@ body {
     height: 38px;
     border-radius: 12px;
     border: 1px solid rgba(151, 235, 255, 0.68);
-    background: url("icon.png");
+    background-color: rgba(3, 16, 26, 0.96);
+    background-image: url("icon.png");
     background-size: cover;
     background-position: center center;
+    background-repeat: no-repeat;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38), 0 0 18px rgba(86, 215, 250, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
@@ -238,9 +240,11 @@ body {
     width: 388px;
     height: 520px;
     padding: 28px;
-    background: url("launchImg.png");
+    background-color: #102f50;
+    background-image: url("launchImg.png");
     background-size: cover;
     background-position: center bottom;
+    background-repeat: no-repeat;
     color: #f4fbff;
 }
 
