@@ -1,0 +1,30 @@
+{
+  "schema": "frozenlands.module.index.v1",
+  "module": "quality",
+  "modulePath": "modulesSrc/quality",
+  "id": "engine.quality",
+  "type": "runtime",
+  "entrypoint": "org.takesome.frozenlands.engine.quality.GraphicsQualityRuntimeInstaller",
+  "description": "Centralized graphics quality profiles, validated runtime policy and subsystem targets.",
+  "project": {
+    "id": "takesome.frozenlands",
+    "name": "Take Some() Frozen Lands",
+    "projectModule": true,
+    "moduleRole": "graphics-quality",
+    "moduleLayer": "runtime",
+    "sourceRoot": "modulesSrc/quality"
+  },
+  "lua": {
+    "api": "src/main/resources/scripts/lua/api.lua",
+    "events": "src/main/resources/scripts/lua/events.lua",
+    "usage": "local quality = require('engine.quality'); quality.apply('HIGH')"
+  },
+  "runtime": {
+    "configs": {
+      "quality": "src/main/resources/config/quality.json"
+    },
+    "assetRoots": [
+      "src/main/resources"
+    ]
+  }
+}

@@ -27,6 +27,7 @@ dependencies {
     runtimeOnly project(':player')
     runtimeOnly project(':world')
     runtimeOnly project(':weather')
+    runtimeOnly project(':quality')
     runtimeOnly project(':save')
     runtimeOnly project(':ui')
 }

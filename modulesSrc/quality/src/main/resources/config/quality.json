@@ -1,0 +1,50 @@
+{
+  "schema": "frozenlands.graphics.quality.v1",
+  "defaultPreset": "HIGH",
+  "presets": {
+    "low": {
+      "textures": { "mipmaps": true, "anisotropy": 2 },
+      "shadows": { "mapSize": 1024, "splits": 2, "distance": 100.0, "intensity": 0.35, "edgesThickness": 2 },
+      "terrain": { "viewDistance": 350.0, "chunkRadius": 3, "lodBias": 1.4 },
+      "models": { "lodBias": 1.5, "maximumDistance": 280.0, "shadowMode": "CAST" },
+      "particles": { "densityMultiplier": 0.45, "emissionDistance": 60.0 },
+      "weather": { "snowDensityMultiplier": 0.45, "visibilityEffects": false },
+      "postProcessing": { "bloom": false, "fxaa": true, "depthOfField": false, "lightRays": false },
+      "sky": { "cloudQuality": 0.45, "updateIntervalSeconds": 0.25 },
+      "ui": { "renderScale": 0.85, "animations": false }
+    },
+    "medium": {
+      "textures": { "mipmaps": true, "anisotropy": 4 },
+      "shadows": { "mapSize": 2048, "splits": 3, "distance": 140.0, "intensity": 0.45, "edgesThickness": 3 },
+      "terrain": { "viewDistance": 500.0, "chunkRadius": 4, "lodBias": 1.0 },
+      "models": { "lodBias": 1.0, "maximumDistance": 420.0, "shadowMode": "CAST_AND_RECEIVE" },
+      "particles": { "densityMultiplier": 0.7, "emissionDistance": 90.0 },
+      "weather": { "snowDensityMultiplier": 0.7, "visibilityEffects": true },
+      "postProcessing": { "bloom": true, "fxaa": true, "depthOfField": false, "lightRays": true },
+      "sky": { "cloudQuality": 0.7, "updateIntervalSeconds": 0.15 },
+      "ui": { "renderScale": 1.0, "animations": true }
+    },
+    "high": {
+      "textures": { "mipmaps": true, "anisotropy": 8 },
+      "shadows": { "mapSize": 4096, "splits": 4, "distance": 220.0, "intensity": 0.55, "edgesThickness": 3 },
+      "terrain": { "viewDistance": 700.0, "chunkRadius": 6, "lodBias": 0.75 },
+      "models": { "lodBias": 0.75, "maximumDistance": 600.0, "shadowMode": "CAST_AND_RECEIVE" },
+      "particles": { "densityMultiplier": 1.0, "emissionDistance": 130.0 },
+      "weather": { "snowDensityMultiplier": 1.0, "visibilityEffects": true },
+      "postProcessing": { "bloom": true, "fxaa": true, "depthOfField": true, "lightRays": true },
+      "sky": { "cloudQuality": 0.9, "updateIntervalSeconds": 0.08 },
+      "ui": { "renderScale": 1.0, "animations": true }
+    },
+    "ultra": {
+      "textures": { "mipmaps": true, "anisotropy": 16 },
+      "shadows": { "mapSize": 8192, "splits": 4, "distance": 320.0, "intensity": 0.65, "edgesThickness": 4 },
+      "terrain": { "viewDistance": 900.0, "chunkRadius": 8, "lodBias": 0.5 },
+      "models": { "lodBias": 0.5, "maximumDistance": 800.0, "shadowMode": "CAST_AND_RECEIVE" },
+      "particles": { "densityMultiplier": 1.35, "emissionDistance": 180.0 },
+      "weather": { "snowDensityMultiplier": 1.3, "visibilityEffects": true },
+      "postProcessing": { "bloom": true, "fxaa": true, "depthOfField": true, "lightRays": true },
+      "sky": { "cloudQuality": 1.0, "updateIntervalSeconds": 0.04 },
+      "ui": { "renderScale": 1.0, "animations": true }
+    }
+  }
+}

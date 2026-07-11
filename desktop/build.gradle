@@ -42,6 +42,7 @@ dependencies {
     implementation project(':player')
     implementation project(':world')
     implementation project(':weather')
+    implementation project(':quality')
     implementation project(':save')
     implementation project(':ui')
 }

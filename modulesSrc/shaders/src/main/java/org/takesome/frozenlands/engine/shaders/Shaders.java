@@ -130,9 +130,14 @@ public class Shaders extends BaseAppState {
         int oldShadowMapSize = shadowSettings.getShadowMapSize();
         int oldSplits = shadowSettings.getSplits();
         shadowSettings.update(values);
-        applyShadowFilterSettings();
         boolean rebuildRequired = shadowFilter != null
-                && (oldShadowMapSize != shadowSettings.getShadowMapSize() || oldSplits != shadowSettings.getSplits());
+                && (oldShadowMapSize != shadowSettings.getShadowMapSize()
+                || oldSplits != shadowSettings.getSplits());
+        if (rebuildRequired) {
+            rebuildShadowFilter();
+        } else {
+            applyShadowFilterSettings();
+        }
         publish(EngineEventTopics.SHADER_SETTINGS_CHANGED, Map.of(
                 "type", "shadows",
                 "settings", shadowSettings.toMap(),
@@ -203,6 +208,29 @@ public class Shaders extends BaseAppState {
         }
         viewPort.removeProcessor(fpp);
         processorAttached = false;
+    }
+
+    private void rebuildShadowFilter() {
+        boolean enabled = desiredEnabled.getOrDefault(EFFECT_SHADOWS, true);
+        if (fxaaFilter != null) {
+            fpp.removeFilter(fxaaFilter);
+        }
+        if (shadowFilter != null) {
+            fpp.removeFilter(shadowFilter);
+        }
+        shadowFilter = new DirectionalLightShadowFilter(
+                assetManager,
+                shadowSettings.getShadowMapSize(),
+                shadowSettings.getSplits()
+        );
+        shadowFilter.setLight(context.requireService(Sky.class).getSun());
+        shadowFilter.setEnabled(enabled);
+        applyShadowFilterSettings();
+        filters.put(EFFECT_SHADOWS, shadowFilter);
+        fpp.addFilter(shadowFilter);
+        if (fxaaFilter != null) {
+            fpp.addFilter(fxaaFilter);
+        }
     }
 
     private void applyShadowFilterSettings() {

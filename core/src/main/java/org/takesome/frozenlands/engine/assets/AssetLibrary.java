@@ -28,6 +28,7 @@ public final class AssetLibrary {
     private final AssetCatalog catalog;
     private final AssetUsageMetrics metrics;
     private final AssetRuntimeBackend runtime;
+    private final TextureQualityPolicy textureQuality = new TextureQualityPolicy();
 
     public AssetLibrary(AssetManager backend, Logger logger) {
         Objects.requireNonNull(backend, "backend");
@@ -67,11 +68,18 @@ public final class AssetLibrary {
     }
 
     public Texture texture(String idOrPath) {
-        return texture(idOrPath, TextureOptions.defaults());
+        return texture(idOrPath, TextureProfile.WORLD);
+    }
+
+    public Texture texture(String idOrPath, TextureProfile profile) {
+        return texture(idOrPath, textureQuality.options(profile));
     }
 
     public Texture texture(String idOrPath, Texture.WrapMode wrapMode) {
-        return texture(idOrPath, TextureOptions.defaults().withWrap(wrapMode));
+        return texture(
+                idOrPath,
+                textureQuality.options(TextureProfile.WORLD).withWrap(wrapMode)
+        );
     }
 
     public Texture texture(String idOrPath, TextureOptions options) {
@@ -133,6 +141,14 @@ public final class AssetLibrary {
 
     public void clearRuntimeCache() {
         runtime.clearCache();
+    }
+
+    public void configureTextureQuality(boolean mipmaps, int anisotropy) {
+        textureQuality.configure(mipmaps, anisotropy);
+    }
+
+    public Map<String, Object> textureQualityStatus() {
+        return textureQuality.status();
     }
 
     public Map<String, Object> status() {
