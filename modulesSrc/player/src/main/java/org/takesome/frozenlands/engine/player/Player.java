@@ -10,6 +10,7 @@ import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
 import org.slf4j.Logger;
 import org.takesome.frozenlands.engine.EngineContext;
+import org.takesome.frozenlands.engine.assets.AssetLibrary;
 import org.takesome.frozenlands.engine.player.camera.PlayerCameraRig;
 import org.takesome.frozenlands.engine.player.input.FPSViewControl;
 import org.takesome.frozenlands.engine.player.input.UserInputHandler;
@@ -42,7 +43,7 @@ public class Player extends Node {
         this.playerOptions = PlayerOptions.load(ModuleIndexCatalog.defaultCatalog().configPath(PlayerModule.ID, "playerOptions"));
         this.runtimeSettings = new PlayerRuntimeSettings();
         this.playerSoundProvider = new PlayerSoundProvider(kernel);
-        this.playerModel = new PlayerModel(kernel.getAssetManager(), playerOptions);
+        this.playerModel = new PlayerModel(kernel.assets(), playerOptions);
         logModelPipelineDiagnostics();
         this.playerModel.setCullHint(playerOptions.getCullHint());
         this.playerModel.setShadowMode(playerOptions.getShadowMode());
@@ -210,6 +211,7 @@ public class Player extends Node {
     public PlayerHeadTurnController getHeadTurnController() { return headTurnController; }
     public PlayerToolController getToolController() { return toolController; }
     public AssetManager getAssetManager() { return kernelInterface.getAssetManager(); }
+    public AssetLibrary getAssets() { return kernelInterface.assets(); }
     public AppStateManager getStateManager() { return kernelInterface.appStateManager(); }
     public InputManager getInputManager() { return kernelInterface.getInputManager(); }
     public Camera getCamera() { return kernelInterface.getCamera(); }

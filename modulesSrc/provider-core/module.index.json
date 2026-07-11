@@ -16,11 +16,14 @@
   },
   "lua": {
     "api": "src/main/resources/scripts/lua/api.lua",
+    "assetsApi": "src/main/resources/scripts/lua/assets.lua",
     "events": "src/main/resources/scripts/lua/events.lua",
-    "usage": "Use engine.sound, engine.material and engine.model provider modules for concrete commands."
+    "usage": "Use engine.assets for centralized asset catalog operations; engine.sound, engine.material and engine.model provide domain-specific commands."
   },
   "runtime": {
-    "configs": {},
+    "configs": {
+      "assets": "src/main/resources/config/assets.json"
+    },
     "assetRoots": [
       "src/main/resources"
     ]

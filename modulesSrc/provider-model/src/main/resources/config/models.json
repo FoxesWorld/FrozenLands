@@ -1,0 +1,106 @@
+{
+  "schema": "frozenlands.models.catalog.v1",
+  "description": "Runtime model asset catalogue for engine.model. Paths are JME asset paths relative to the public assets root.",
+  "assetModule": "assets.public",
+  "assetRoot": "assets",
+  "models": [
+    {
+      "id": "frozenlands.characters.character",
+      "name": "character",
+      "category": "characters",
+      "path": "models/characters/character/character.gltf",
+      "buffers": [
+        "models/characters/character/character.bin"
+      ],
+      "texturePacks": [
+        "textures/character"
+      ],
+      "provider": "engine.model",
+      "loadCommand": "load"
+    },
+    {
+      "id": "frozenlands.characters.joel",
+      "name": "joel",
+      "category": "characters",
+      "path": "models/characters/joel/joel.gltf",
+      "buffers": [
+        "models/characters/joel/joel.bin"
+      ],
+      "texturePacks": [
+        "textures/joel"
+      ],
+      "provider": "engine.model",
+      "loadCommand": "load"
+    },
+    {
+      "id": "frozenlands.characters.sarah",
+      "name": "sarah",
+      "category": "characters",
+      "path": "models/characters/sarah/sarah.gltf",
+      "buffers": [
+        "models/characters/sarah/sarah.bin"
+      ],
+      "texturePacks": [
+        "textures/sarah"
+      ],
+      "provider": "engine.model",
+      "loadCommand": "load"
+    },
+    {
+      "id": "frozenlands.tools.axe",
+      "name": "axe",
+      "category": "tools",
+      "path": "models/tools/axe/axe.gltf",
+      "buffers": [
+        "models/tools/axe/axe.bin"
+      ],
+      "texturePacks": [
+        "textures/tool/axe"
+      ],
+      "provider": "engine.model",
+      "loadCommand": "load"
+    },
+    {
+      "id": "frozenlands.trees.deadfirtrees",
+      "name": "deadFirTrees",
+      "category": "trees",
+      "path": "models/trees/deadFirTrees/deadFirTrees.gltf",
+      "buffers": [
+        "models/trees/deadFirTrees/deadFirTrees.bin"
+      ],
+      "texturePacks": [
+        "textures/Trees"
+      ],
+      "provider": "engine.model",
+      "loadCommand": "load"
+    },
+    {
+      "id": "frozenlands.trees.deadoaktrees",
+      "name": "deadOakTrees",
+      "category": "trees",
+      "path": "models/trees/deadOakTrees/deadOakTrees.gltf",
+      "buffers": [
+        "models/trees/deadOakTrees/deadOakTrees.bin"
+      ],
+      "texturePacks": [
+        "textures/Trees"
+      ],
+      "provider": "engine.model",
+      "loadCommand": "load"
+    },
+    {
+      "id": "frozenlands.trees.deadtrees",
+      "name": "deadTrees",
+      "category": "trees",
+      "path": "models/trees/deadTrees/deadTrees.gltf",
+      "buffers": [
+        "models/trees/deadTrees/deadTrees.bin"
+      ],
+      "texturePacks": [
+        "textures/Trees"
+      ],
+      "provider": "engine.model",
+      "loadCommand": "load"
+    }
+  ]
+}

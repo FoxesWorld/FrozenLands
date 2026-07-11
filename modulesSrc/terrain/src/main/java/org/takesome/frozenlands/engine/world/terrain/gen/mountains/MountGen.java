@@ -1,6 +1,5 @@
 package org.takesome.frozenlands.engine.world.terrain.gen.mountains;
 
-import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
@@ -14,13 +13,11 @@ import org.takesome.frozenlands.engine.world.terrain.TerrainRuntimeSettings;
 
 public class MountGen {
     private final EngineContext kernelInterface;
-    private final AssetManager assetManager;
     private final TerrainRuntimeSettings settings;
     private TerrainQuad distantTerrain;
 
     public MountGen(EngineContext kernelInterface) {
         this.kernelInterface = kernelInterface;
-        this.assetManager = kernelInterface.getAssetManager();
         this.settings = new TerrainRuntimeSettings();
     }
 
@@ -28,7 +25,7 @@ public class MountGen {
         Material matTerrain = kernelInterface.requireService(MaterialProvider.class).getMaterial(settings.mountainMaterial());
 
         AbstractHeightMap heightmap;
-        Texture heightMapImage = assetManager.loadTexture(settings.mountainHeightMap());
+        Texture heightMapImage = kernelInterface.assets().texture(settings.mountainHeightMap());
         heightmap = new ImageBasedHeightMap(heightMapImage.getImage());
         heightmap.load();
         heightmap.smooth(settings.mountainSmoothAmount(), settings.mountainSmoothRadius());

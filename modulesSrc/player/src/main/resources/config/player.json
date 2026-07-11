@@ -1,5 +1,5 @@
 {
-  "model": "Models/characters/joel/joel.gltf",
+  "model": "frozenlands.characters.joel",
   "scale": 1.0,
   "cullHint": "Never",
   "shadowMode": "Cast",

@@ -48,7 +48,7 @@ final class TerrainAssetVariantLoader {
             List<Spatial> target
     ) {
         int before = target.size();
-        Spatial assetPack = context.getAssetManager().loadModel(modelPath);
+        Spatial assetPack = context.assets().model(modelPath);
         assetPack.setShadowMode(RenderQueue.ShadowMode.Cast);
         Node variantParent = findVariantParent(assetPack);
         if (variantParent == null) {

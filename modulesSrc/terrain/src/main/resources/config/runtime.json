@@ -18,7 +18,7 @@
     "mountains": "terrain#mount"
   },
   "mountains": {
-    "heightMap": "textures/terrain/textures/horizon.png",
+    "heightMap": "terrain.mountain.heightmap",
     "patchSize": 65,
     "quadSize": 2049,
     "smoothAmount": 0.65,
@@ -54,9 +54,9 @@
         "enabled": true,
         "kind": "tree",
         "models": [
-          "Models/trees/deadFirTrees/deadFirTrees.gltf",
-          "Models/trees/deadTrees/deadTrees.gltf",
-          "Models/trees/deadOakTrees/deadOakTrees.gltf"
+          "frozenlands.trees.deadfirtrees",
+          "frozenlands.trees.deadtrees",
+          "frozenlands.trees.deadoaktrees"
         ],
         "minPerTile": 80,
         "maxPerTile": 160,
@@ -98,9 +98,9 @@
   },
   "trees": {
     "models": [
-      "Models/trees/deadFirTrees/deadFirTrees.gltf",
-      "Models/trees/deadTrees/deadTrees.gltf",
-      "Models/trees/deadOakTrees/deadOakTrees.gltf"
+      "frozenlands.trees.deadfirtrees",
+      "frozenlands.trees.deadtrees",
+      "frozenlands.trees.deadoaktrees"
     ],
     "minPerTile": 80,
     "maxPerTile": 160,

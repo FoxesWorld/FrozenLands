@@ -5,7 +5,7 @@
   "id": "engine.model",
   "type": "provider",
   "entrypoint": "org.takesome.frozenlands.engine.providers.model.ModelProvider",
-  "description": "Model provider module. Java loads and attaches models; Lua calls module commands through java.callModule.",
+  "description": "Model instance provider backed by the centralized FrozenLands AssetLibrary. Models are addressed by stable catalogue IDs or virtual asset paths.",
   "project": {
     "id": "takesome.frozenlands",
     "name": "Take Some() Frozen Lands",
@@ -17,7 +17,7 @@
   "lua": {
     "api": "src/main/resources/scripts/lua/api.lua",
     "events": "src/main/resources/scripts/lua/events.lua",
-    "usage": "local model = require('engine.model'); model.call('load', { path = '<asset-path-from-config>' })"
+    "usage": "local model = require('engine.model'); model.load('frozenlands.tools.axe', { attach = true, collision = false })"
   },
   "runtime": {
     "configs": {

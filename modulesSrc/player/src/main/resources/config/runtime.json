@@ -33,7 +33,7 @@
   },
   "tool": {
     "enabled": true,
-    "model": "Models/tools/axe/axe.gltf",
+    "model": "frozenlands.tools.axe",
     "scale": 0.45,
     "forwardOffset": 1.05,
     "leftOffset": -0.42,

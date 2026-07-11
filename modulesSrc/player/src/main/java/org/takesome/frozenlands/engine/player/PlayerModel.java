@@ -1,6 +1,6 @@
 package org.takesome.frozenlands.engine.player;
 
-import com.jme3.asset.AssetManager;
+import org.takesome.frozenlands.engine.assets.AssetLibrary;
 import com.jme3.material.Material;
 import com.jme3.bounding.BoundingBox;
 import com.jme3.bounding.BoundingVolume;
@@ -24,9 +24,9 @@ public class PlayerModel extends Node {
     private PlayerSkinningGuard.Result skinningGuardResult = PlayerSkinningGuard.Result.notSkinned(0);
     private PlayerSkinningGuard.RepairResult skinningRepairResult = PlayerSkinningGuard.RepairResult.none("not-run");
 
-    public PlayerModel(AssetManager assetManager, PlayerOptions playerOptions) {
+    public PlayerModel(AssetLibrary assets, PlayerOptions playerOptions) {
         this.playerOptions = playerOptions;
-        this.playerSpatial = assetManager.loadModel(playerOptions.getModelPath());
+        this.playerSpatial = assets.model(playerOptions.getModelPath());
         sanitizeModelPipeline();
         this.playerSpatial.setLocalScale(playerOptions.getScale());
         attachChild(playerSpatial);

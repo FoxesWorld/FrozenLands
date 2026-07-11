@@ -15,13 +15,13 @@
     "velocityY": -0.35,
     "velocityZ": 0.2,
     "velocityVariation": 0.65,
-    "texture": "textures/snowflake.png",
+    "texture": "weather.snowflake",
     "imagesX": 1,
     "imagesY": 1
   },
   "effects": {
     "snowImpact": {
-      "texture": "textures/snowflake.png",
+      "texture": "weather.snowflake",
       "particles": 48,
       "life": 0.65,
       "startSize": 0.04,
@@ -31,7 +31,7 @@
       "velocityVariation": 0.9
     },
     "smoke": {
-      "texture": "textures/snowflake.png",
+      "texture": "weather.snowflake",
       "particles": 96,
       "life": 1.5,
       "startSize": 0.12,
@@ -41,7 +41,7 @@
       "velocityVariation": 0.7
     },
     "woodChop": {
-      "texture": "textures/snowflake.png",
+      "texture": "weather.snowflake",
       "particles": 36,
       "life": 0.42,
       "startSize": 0.045,
@@ -61,7 +61,7 @@
       "endA": 0.0
     },
     "woodBreak": {
-      "texture": "textures/snowflake.png",
+      "texture": "weather.snowflake",
       "particles": 72,
       "lowLife": 0.55,
       "highLife": 0.9,
@@ -85,7 +85,7 @@
   "runtime": {
     "maxActiveBursts": 96,
     "defaultEffect": "smoke",
-    "defaultTexture": "textures/snowflake.png"
+    "defaultTexture": "weather.snowflake"
   },
   "eventEffects": {
     "enabled": true,

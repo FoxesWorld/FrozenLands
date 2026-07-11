@@ -26,7 +26,7 @@
       "minLife": 4.0,
       "maxLife": 13.0,
       "maxAngularVelocity": 1.6,
-      "texture": "textures/snowflake.png"
+      "texture": "weather.snowflake"
     }
   }
 }

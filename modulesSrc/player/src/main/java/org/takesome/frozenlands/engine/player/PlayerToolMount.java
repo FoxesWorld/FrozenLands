@@ -93,7 +93,7 @@ public final class PlayerToolMount {
     }
 
     private void loadTool() {
-        toolSpatial = player.getAssetManager().loadModel(settings.toolModel());
+        toolSpatial = player.getAssets().model(settings.toolModel());
         toolSpatial.setName("player_tool_" + settings.toolName());
         toolSpatial.setLocalScale(settings.toolScale());
         toolSpatial.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);

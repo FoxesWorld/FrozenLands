@@ -1,43 +1,49 @@
 package org.takesome.frozenlands.engine.providers.model;
 
-import com.jme3.asset.AssetManager;
-import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.shapes.CollisionShape;
-import com.jme3.bullet.control.RigidBodyControl;
-import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import org.takesome.frozenlands.engine.EngineContext;
+import org.takesome.frozenlands.engine.assets.AssetLibrary;
 import org.takesome.frozenlands.engine.providers.EngineProvider;
 import org.takesome.frozenlands.engine.providers.EngineProviders;
 import org.takesome.frozenlands.engine.providers.ProviderCommand;
+import org.takesome.frozenlands.engine.resources.ModuleIndexCatalog;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.takesome.frozenlands.engine.providers.material.MaterialProvider;
 
-public class ModelProvider implements EngineProvider {
-    private final EngineContext engineContext;
-    private final AssetManager assetManager;
-    private final BulletAppState bulletAppState;
-    private final Node rootNode;
-    private final Map<String, Spatial> modelsMap = new LinkedHashMap<>();
+import static org.takesome.frozenlands.engine.providers.ProviderArguments.bool;
+import static org.takesome.frozenlands.engine.providers.ProviderArguments.reference;
+import static org.takesome.frozenlands.engine.providers.ProviderArguments.string;
+import static org.takesome.frozenlands.engine.providers.ProviderResponses.ok;
+
+/** High-level model instance provider backed by the central AssetLibrary. */
+public final class ModelProvider implements EngineProvider {
+    private static final ModuleIndexCatalog MODULE_INDEX = ModuleIndexCatalog.defaultCatalog();
+    private static final String DEFAULT_MODELS_CONFIG =
+            MODULE_INDEX.configPath(EngineProviders.MODEL_PROVIDER, "models");
+
+    private final AssetLibrary assets;
+    private final ModelCatalogLoader catalogLoader;
+    private final ModelInstanceRegistry instances;
     private final Map<String, ProviderCommand> commands = new LinkedHashMap<>();
-    private int sequence = 0;
 
-    public ModelProvider(EngineContext engineContext) {
-        this.engineContext = engineContext;
-        this.assetManager = engineContext.getAssetManager();
-        this.bulletAppState = engineContext.getBulletAppState();
-        this.rootNode = engineContext.getRootNode();
+    public ModelProvider(EngineContext context) {
+        this.assets = context.assets();
+        this.catalogLoader = new ModelCatalogLoader(context);
+        this.instances = new ModelInstanceRegistry(context);
         registerCommands();
     }
 
     @Override
     public String id() {
         return EngineProviders.MODEL_PROVIDER;
+    }
+
+    @Override
+    public void register(EngineContext context) {
+        loadCatalog(DEFAULT_MODELS_CONFIG);
     }
 
     @Override
@@ -48,101 +54,94 @@ public class ModelProvider implements EngineProvider {
     @Override
     public Map<String, Object> luaDescriptor() {
         Map<String, Object> descriptor = EngineProvider.super.luaDescriptor();
-        descriptor.put("models", List.copyOf(modelsMap.keySet()));
+        descriptor.put("activeModels", getModelIds());
+        descriptor.put("catalog", assets.catalog(AssetLibrary.Type.MODEL));
         return descriptor;
     }
 
-    public Spatial loadModels(String modelPath, String material) {
-        return loadModel(modelPath, material, nextId("model"), true, true);
+    public void loadCatalog(String path) {
+        catalogLoader.load(path);
+    }
+
+    public Spatial loadModels(String modelReference, String materialReference) {
+        return instances.create(
+                modelReference,
+                materialReference,
+                "",
+                true,
+                true
+        );
     }
 
     public Spatial getModel(String id) {
-        return modelsMap.get(id);
+        return instances.get(id);
     }
 
     public List<String> getModelIds() {
-        return List.copyOf(modelsMap.keySet());
-    }
-
-    private Spatial loadModel(String modelPath, String material, String id, boolean attach, boolean collision) {
-        Spatial model = assetManager.loadModel(modelPath);
-        model.setName(id);
-        if (material != null && !material.isBlank()) {
-            model.setMaterial(engineContext.requireService(MaterialProvider.class).getMaterial(material));
-        }
-        if (attach) {
-            rootNode.attachChild(model);
-        }
-        if (collision) {
-            createCollisionControl(model);
-        }
-        modelsMap.put(id, model);
-        engineContext.getProviderRegistry().publishEvent("provider.model.loaded", Map.of("id", id, "path", modelPath));
-        return model;
-    }
-
-    private boolean detachModel(String id) {
-        Spatial model = modelsMap.remove(id);
-        if (model == null) {
-            return false;
-        }
-        RigidBodyControl control = model.getControl(RigidBodyControl.class);
-        if (control != null) {
-            bulletAppState.getPhysicsSpace().remove(control);
-            model.removeControl(RigidBodyControl.class);
-        }
-        model.removeFromParent();
-        engineContext.getProviderRegistry().publishEvent("provider.model.detached", Map.of("id", id));
-        return true;
-    }
-
-    private RigidBodyControl createCollisionControl(Spatial spatial) {
-        CollisionShape shape = CollisionShapeFactory.createMeshShape(spatial);
-        RigidBodyControl control = new RigidBodyControl(shape, 0);
-        spatial.addControl(control);
-        bulletAppState.getPhysicsSpace().add(control);
-        return control;
+        return instances.ids();
     }
 
     private void registerCommands() {
-        commands.put("load", ProviderCommand.of("load", "Load and optionally attach a model", args -> {
-            String path = stringArg(args, "path", "");
-            String material = stringArg(args, "material", "");
-            String id = stringArg(args, "id", nextId("model"));
-            boolean attach = booleanArg(args, "attach", true);
-            boolean collision = booleanArg(args, "collision", true);
-            loadModel(path, material, id, attach, collision);
-            Map<String, Object> result = result("id", id);
-            result.put("path", path);
-            return result;
-        }));
-        commands.put("list", ProviderCommand.of("list", "List loaded model ids", args -> result("models", getModelIds())));
-        commands.put("detach", ProviderCommand.of("detach", "Detach and forget a loaded model", args -> {
-            String id = stringArg(args, "id", "");
-            Map<String, Object> result = result("detached", detachModel(id));
-            result.put("id", id);
-            return result;
-        }));
+        commands.put("load", ProviderCommand.of(
+                "load",
+                "Load and optionally attach a model",
+                this::load
+        ));
+        commands.put("list", ProviderCommand.of(
+                "list",
+                "List active model instance ids",
+                arguments -> ok("models", getModelIds())
+        ));
+        commands.put("catalog", ProviderCommand.of(
+                "catalog",
+                "List registered model assets",
+                arguments -> ok("models", assets.catalog(AssetLibrary.Type.MODEL))
+        ));
+        commands.put("reloadCatalog", ProviderCommand.of(
+                "reloadCatalog",
+                "Reload model catalogue",
+                arguments -> {
+                    loadCatalog(string(arguments, "path", DEFAULT_MODELS_CONFIG));
+                    return ok("models", assets.catalog(AssetLibrary.Type.MODEL));
+                }
+        ));
+        commands.put("resolve", ProviderCommand.of(
+                "resolve",
+                "Resolve a model id or path",
+                this::resolve
+        ));
+        commands.put("detach", ProviderCommand.of(
+                "detach",
+                "Detach and forget a model instance",
+                arguments -> {
+                    String id = string(arguments, "id", "");
+                    return ok(Map.of("id", id, "detached", instances.detach(id)));
+                }
+        ));
     }
 
-    private String nextId(String prefix) {
-        return prefix + '-' + sequence++;
+    private Map<String, Object> load(Map<String, Object> arguments) {
+        String asset = reference(arguments);
+        Spatial model = instances.create(
+                asset,
+                string(arguments, "material", ""),
+                string(arguments, "id", ""),
+                bool(arguments, "attach", true),
+                bool(arguments, "collision", true)
+        );
+        return ok(Map.of(
+                "id", model.getName(),
+                "asset", asset,
+                "source", assets.resolve(AssetLibrary.Type.MODEL, asset)
+        ));
     }
 
-    private String stringArg(Map<String, Object> args, String name, String fallback) {
-        Object value = args == null ? null : args.get(name);
-        return value == null ? fallback : String.valueOf(value);
-    }
-
-    private boolean booleanArg(Map<String, Object> args, String name, boolean fallback) {
-        Object value = args == null ? null : args.get(name);
-        return value == null ? fallback : Boolean.parseBoolean(String.valueOf(value));
-    }
-
-    private Map<String, Object> result(String key, Object value) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("ok", true);
-        result.put(key, value);
-        return result;
+    private Map<String, Object> resolve(Map<String, Object> arguments) {
+        String asset = reference(arguments);
+        return ok(Map.of(
+                "asset", asset,
+                "source", assets.resolve(AssetLibrary.Type.MODEL, asset),
+                "exists", assets.exists(AssetLibrary.Type.MODEL, asset)
+        ));
     }
 }

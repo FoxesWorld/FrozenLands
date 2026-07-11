@@ -223,7 +223,7 @@ public final class HtmlUiState extends BaseAppState implements ActionListener {
         try {
             // JME GUI bucket sorts higher Z first. The background must be drawn before
             // the HtmlDom foreground texture, otherwise it covers menu cards/buttons.
-            Texture2D backgroundTexture = (Texture2D) context.getAssetManager().loadTexture("textures/ui/menubg.png");
+            Texture2D backgroundTexture = (Texture2D) context.assets().texture("textures/ui/menubg.png");
             backgroundTexture.setMinFilter(Texture.MinFilter.BilinearNoMipMaps);
             backgroundTexture.setMagFilter(Texture.MagFilter.Bilinear);
             backgroundSurface = new Picture("FrozenLandsMenuBackground");

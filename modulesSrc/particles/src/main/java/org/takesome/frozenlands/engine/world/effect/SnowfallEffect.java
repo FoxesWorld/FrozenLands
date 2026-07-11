@@ -14,8 +14,8 @@ public class SnowfallEffect extends ParticleEmitter {
     public SnowfallEffect(EngineContext engineContext, ParticleRuntimeSettings settings) {
         super("Snow", ParticleMesh.Type.Triangle, settings.snowParticles());
         this.settings = settings;
-        Material snowMat = new Material(engineContext.getAssetManager(), "Common/MatDefs/Misc/Particle.j3md");
-        snowMat.setTexture("Texture", engineContext.getAssetManager().loadTexture(settings.snowTexture()));
+        Material snowMat = engineContext.assets().createMaterial("Common/MatDefs/Misc/Particle.j3md");
+        snowMat.setTexture("Texture", engineContext.assets().texture(settings.snowTexture()));
         setMaterial(snowMat);
         setImagesX(settings.snowImagesX());
         setImagesY(settings.snowImagesY());

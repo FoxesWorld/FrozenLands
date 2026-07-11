@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/** Adapts a provider command surface to the engine module ABI. */
 public final class ProviderModuleAdapter implements EngineModule {
     private final EngineProvider provider;
     private final Map<String, ModuleCommand> commands = new LinkedHashMap<>();
@@ -24,6 +25,11 @@ public final class ProviderModuleAdapter implements EngineModule {
     @Override
     public String description() {
         return "Provider module API for " + provider.id();
+    }
+
+    @Override
+    public String luaApiPath() {
+        return provider.luaApiPath();
     }
 
     @Override

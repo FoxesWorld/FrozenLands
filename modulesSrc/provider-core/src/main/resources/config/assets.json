@@ -1,0 +1,21 @@
+{
+  "schema": "frozenlands.asset.catalog.v1",
+  "textures": [
+    {
+      "id": "ui.menu.background",
+      "path": "textures/ui/menubg.png",
+      "category": "ui"
+    },
+    {
+      "id": "weather.snowflake",
+      "path": "textures/snowflake.png",
+      "category": "weather"
+    },
+    {
+      "id": "terrain.mountain.heightmap",
+      "path": "textures/terrain/textures/horizon.png",
+      "category": "terrain"
+    }
+  ],
+  "models": []
+}

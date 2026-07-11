@@ -15,8 +15,8 @@ public final class ParticleBurstEffect extends ParticleEmitter {
 
     public ParticleBurstEffect(EngineContext context, ParticleRuntimeSettings.EffectSettings settings, Vector3f position) {
         super(settings.id(), ParticleMesh.Type.Triangle, settings.particles());
-        Material material = new Material(context.getAssetManager(), "Common/MatDefs/Misc/Particle.j3md");
-        material.setTexture("Texture", context.getAssetManager().loadTexture(settings.texture()));
+        Material material = context.assets().createMaterial("Common/MatDefs/Misc/Particle.j3md");
+        material.setTexture("Texture", context.assets().texture(settings.texture()));
         setMaterial(material);
         setImagesX(settings.imagesX());
         setImagesY(settings.imagesY());

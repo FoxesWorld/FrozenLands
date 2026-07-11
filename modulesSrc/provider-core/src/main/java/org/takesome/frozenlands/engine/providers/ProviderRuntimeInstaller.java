@@ -25,6 +25,10 @@ public final class ProviderRuntimeInstaller implements EngineRuntimeInstaller {
         ProviderRegistry registry = context.getProviderRegistry();
         context.getModuleRegistry().register(EngineModule.descriptor("engine.providers", "Provider registry exposed to Lua bridge"), context);
 
+        AssetLibraryProvider assetProvider = (AssetLibraryProvider) registry.register(new AssetLibraryProvider(context), context);
+        context.getModuleRegistry().register(new ProviderModuleAdapter(assetProvider), context);
+        context.registerService(AssetLibraryProvider.class, assetProvider);
+
         SoundProvider soundProvider = (SoundProvider) registry.register(new SoundProvider(context), context);
         context.getModuleRegistry().register(new ProviderModuleAdapter(soundProvider), context);
         context.registerService(SoundProvider.class, soundProvider);
