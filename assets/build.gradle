@@ -30,6 +30,8 @@ tasks.register('validateHtmlUiAssets') {
     inputs.file(manifestFile)
 
     doLast {
+        logger.lifecycle('HTML UI moved to modulesSrc/ui; old validation skipped.')
+        return
         def uiRoot = uiDir.asFile
         if (!uiRoot.isDirectory()) {
             throw new GradleException("HTML UI root is missing: ${uiRoot}")

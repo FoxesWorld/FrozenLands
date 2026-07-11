@@ -70,5 +70,6 @@ dependencies {
     implementation libs.log4j.slf4j2.impl
     implementation libs.slf4j.jul.bridge
     implementation libs.jansi
-    implementation 'dev.takesome:html-dom-aio:1.0.10'
+    implementation 'dev.takesome:html-dom-aio:1.0.22'
+    implementation 'org.takesome:hframe-core:0.1.0-SNAPSHOT'
 }

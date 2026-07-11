@@ -1,0 +1,16 @@
+{
+  "schema": "takesome.frozenlands.ui.v1",
+  "name": "FrozenLands Minimal HtmlDom Menu",
+  "runtime": "HtmlDom",
+  "entry": "app/frozenlands.html",
+  "startupScreen": "main-menu",
+  "documents": {
+    "shell": "app/frozenlands.html"
+  },
+  "styles": [
+    "screens/minimal-menu.css"
+  ],
+  "scripts": [
+    "scripts/frozenlands.lua"
+  ]
+}

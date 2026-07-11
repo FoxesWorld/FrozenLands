@@ -3,19 +3,30 @@
    No engine-specific hardcode. */
 
 html,
-body,
-.prelaunch-app,
-.prelaunch-shell,
-.prelaunch-root {
+.prelaunch-app {
     width: 960px;
     height: 640px;
     margin: 0;
     padding: 0;
+    background: transparent;
 }
 
-body,
+body {
+    width: 960px;
+    height: 640px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    color: #effaff;
+    font-family: "FS Elliot Pro", "Segoe UI", Arial, sans-serif;
+}
+
 .prelaunch-shell {
-    background: #1b76d5;
+    width: 960px;
+    height: 640px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
     color: #effaff;
     font-family: "FS Elliot Pro", "Segoe UI", Arial, sans-serif;
 }
@@ -23,6 +34,23 @@ body,
 
 * {
     box-sizing: border-box;
+}
+
+@keyframes fl-prelaunch-aurora-breathe {
+    from {
+        opacity: 0.72;
+        transform: translate(0px, 0px) scale(1) rotate(0deg);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(10px, -6px) scale(1.018) rotate(0deg);
+    }
+}
+
+@keyframes fl-prelaunch-button-glow {
+    from { opacity: 0.92; }
+    to { opacity: 1; }
 }
 
 /* --------------------------------------------------------------------------
@@ -33,7 +61,10 @@ body,
     position: relative;
     width: 960px;
     height: 640px;
+    margin: 0;
+    padding: 0;
     overflow: hidden;
+    border-radius: 18px;
     background: linear-gradient(135deg, #2a2ad3 0%, #f1e4e4 48%, #1e7ec5 100%);
 }
 
@@ -50,6 +81,9 @@ body,
     height: 330px;
     border-radius: 260px;
     background: rgba(72, 198, 245, 0.18);
+    opacity: 0.72;
+    transform: translate(0px, 0px) scale(1) rotate(0deg);
+    animation: fl-prelaunch-aurora-breathe 5600ms ease-in-out infinite alternate both;
 }
 
 .aurora-b {
@@ -59,6 +93,9 @@ body,
     height: 310px;
     border-radius: 300px;
     background: rgba(22, 126, 190, 0.14);
+    opacity: 0.72;
+    transform: translate(0px, 0px) scale(1) rotate(0deg);
+    animation: fl-prelaunch-aurora-breathe 7200ms ease-in-out infinite alternate-reverse both;
 }
 
 .ice-line-a {
@@ -106,65 +143,67 @@ body,
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.46), 0 0 24px rgba(75, 203, 245, 0.18), inset 0 1px 0 rgba(235, 252, 255, 0.22), inset 0 -1px 0 rgba(5, 13, 24, 0.72);
 }
 
+.window-brand-row {
+    position: absolute;
+    display: block;
+    left: 20px;
+    top: 8px;
+    width: 560px;
+    height: 40px;
+    white-space: nowrap;
+}
+
+.window-app-icon {
+    position: absolute;
+    display: block;
+    left: 0;
+    top: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(151, 235, 255, 0.68);
+    background: url("icon.png");
+    background-size: cover;
+    background-position: center center;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38), 0 0 18px rgba(86, 215, 250, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.window-title-stack {
+    position: absolute;
+    display: block;
+    left: 52px;
+    top: 2px;
+    width: 500px;
+    height: 38px;
+}
+
+.window-title {
+    position: absolute;
+    display: block;
+    left: 0;
+    top: 0;
+    width: 500px;
+    height: 22px;
+    color: #f4fbff;
+    font-size: 17px;
+    font-weight: 900;
+    line-height: 22px;
+    text-shadow: 0 2px 7px rgba(0, 0, 0, 0.58), 0 0 12px rgba(110, 225, 255, 0.30);
+}
+
 .window-brand {
     position: absolute;
-    left: 70px;
-    top: 10px;
+    display: block;
+    left: 0;
+    top: 23px;
+    width: 500px;
+    height: 14px;
     color: #8eeeff;
     text-transform: uppercase;
     letter-spacing: 2px;
     font-size: 10px;
     font-weight: 800;
-}
-
-.window-title {
-    position: absolute;
-    left: 70px;
-    top: 25px;
-    color: #f4fbff;
-    font-size: 16px;
-    font-weight: 900;
-    text-shadow: 0 2px 7px rgba(0, 0, 0, 0.58), 0 0 12px rgba(110, 225, 255, 0.30);
-}
-
-.window-titlebar::before {
-    content: "";
-    position: absolute;
-    left: 1px;
-    right: 1px;
-    top: 1px;
-    height: 18px;
-    border-radius: 15px 15px 0 0;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(138, 232, 255, 0.08), transparent);
-    pointer-events: none;
-}
-
-.window-titlebar::after {
-    content: "";
-    position: absolute;
-    left: 18px;
-    right: 18px;
-    bottom: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(170, 240, 255, 0.88), transparent);
-    pointer-events: none;
-}
-
-.window-app-icon {
-    position: absolute;
-    left: 22px;
-    top: 11px;
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    border: 1px solid rgba(151, 235, 255, 0.62);
-    background: linear-gradient(180deg, rgba(48, 154, 190, 0.98), rgba(12, 50, 72, 0.98));
-    color: #f3fdff;
-    text-align: center;
-    line-height: 36px;
-    font-size: 18px;
-    font-weight: 900;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38), 0 0 18px rgba(86, 215, 250, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    line-height: 14px;
 }
 
 /* --------------------------------------------------------------------------
@@ -313,7 +352,7 @@ body,
    -------------------------------------------------------------------------- */
 
 #control-title {
-    margin: 10px 0 0;
+    margin: 8px 0 0;
     color: #f2fbff;
     font-size: 24px;
     line-height: 30px;
@@ -324,7 +363,7 @@ body,
     position: absolute;
     left: 24px;
     width: 460px;
-    padding: 12px;
+    padding: 10px 12px;
     border: 1px solid rgba(120, 215, 245, 0.34);
     border-radius: 12px;
     background: linear-gradient(180deg, rgba(14, 40, 58, 0.96), rgba(4, 13, 21, 0.94));
@@ -333,29 +372,29 @@ body,
 }
 
 .block-profile {
-    top: 76px;
-    height: 106px;
+    top: 72px;
+    height: 104px;
 }
 
 .block-resolution {
-    top: 196px;
-    height: 70px;
+    top: 188px;
+    height: 68px;
 }
 
 .block-display {
-    top: 278px;
-    height: 62px;
+    top: 266px;
+    height: 60px;
 }
 
 .block-aa {
-    top: 356px;
-    height: 70px;
+    top: 338px;
+    height: 68px;
 }
 
 .block-toggles {
-    top: 432px;
-    height: 40px;
-    padding: 15px 5px 5px 5px;
+    top: 414px;
+    height: 46px;
+    padding: 7px 8px 6px 8px;
 }
 
 .setting-title {
@@ -368,7 +407,7 @@ body,
 
 .setting-hint {
     width: 198px;
-    margin-top: 5px;
+    margin-top: 4px;
     color: #d8eaf2;
     font-family: "FS Elliot Pro", "Segoe UI", Arial, sans-serif;
     font-size: 11px;
@@ -381,8 +420,8 @@ body,
     width: 22px;
     height: 20px;
     border-radius: 5px;
-    border: 1px dotted blueviolet;
-    margin: 0px 10px;
+    border: none;
+    margin: 0 8px 0 0;
 }
 
 .icon.pl-icon {
@@ -390,6 +429,18 @@ body,
     font-family: "Font Awesome Solid", "Segoe UI Symbol", sans-serif;
     font-size: 11px;
     font-weight: 900;
+}
+
+.icon.antiAliasing {
+    color: #dcdc15;
+}
+
+.icon.displayMode {
+    color: #8b5cf6;
+}
+
+.icon.cogs {
+    color: #8c898c;
 }
 
 /* --------------------------------------------------------------------------
@@ -407,11 +458,17 @@ button {
     font-size: 12px;
     font-weight: 800;
     box-shadow: 0 0 10px rgba(87, 197, 238, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    opacity: 0.96;
+    transform: translate(0px, 0px) scale(1) rotate(0deg);
+    transition: transform 140ms ease-out, opacity 140ms ease-out, border-color 140ms ease-out, color 140ms ease-out;
 }
 
 button:hover {
     border-color: rgba(133, 228, 255, 0.90);
     background: linear-gradient(180deg, rgba(42, 92, 122, 0.98), rgba(10, 26, 40, 0.98));
+    opacity: 1;
+    transform: translate(0px, -1px) scale(1.012) rotate(0deg);
+    animation: fl-prelaunch-button-glow 760ms ease-in-out infinite alternate both;
 }
 
 .choice-button[data-selected="true"],
@@ -429,22 +486,22 @@ button:hover {
 
 #preset-performance {
     left: 236px;
-    top: 14px;
+    top: 12px;
 }
 
 #preset-balanced {
     left: 338px;
-    top: 14px;
+    top: 12px;
 }
 
 #preset-quality {
     left: 236px;
-    top: 58px;
+    top: 56px;
 }
 
 #preset-fullscreen {
     left: 338px;
-    top: 58px;
+    top: 56px;
 }
 
 .step-button {
@@ -458,7 +515,7 @@ button:hover {
     position: absolute;
     display: block;
     left: 278px;
-    top: 16px;
+    top: 14px;
     width: 112px;
     height: 40px;
     border-top: 1px solid rgba(150, 225, 250, 0.42);
@@ -474,19 +531,19 @@ button:hover {
 
 #resolution-prev, #msaa-prev {
     left: 236px;
-    top: 16px;
+    top: 14px;
     border-radius: 10px 0 0 10px;
 }
 
 #resolution-next, #msaa-next {
     left: 392px;
-    top: 16px;
+    top: 14px;
     border-radius: 0 10px 10px 0;
 }
 
 .wide-button {
     left: 236px;
-    top: 16px;
+    top: 10px;
     width: 202px;
     height: 40px;
 }
@@ -507,36 +564,46 @@ button:hover {
 
 .action-bar {
     position: absolute;
+    display: block;
     left: 24px;
-    bottom: 8px;
+    top: 472px;
     width: 460px;
-    height: 38px;
+    height: 40px;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .footer-button {
+    position: absolute;
+    display: block;
     top: 0;
     height: 38px;
+    line-height: 38px;
+    text-align: center;
+    vertical-align: top;
 }
 
 .footer-reset {
     left: 0;
-    width: 132px;
+    width: 136px;
+    background: linear-gradient(180deg, rgba(45, 76, 92, 0.98), rgba(15, 31, 42, 0.98));
 }
 
 .footer-cancel {
-    left: 144px;
+    left: 148px;
     width: 94px;
+    background: linear-gradient(180deg, rgba(220, 56, 86, 0.98), rgba(176, 14, 31, 0.98));
 }
 
-#prelaunch-launch {
-    left: 266px;
-    width: 188px;
+.footer-launch {
+    left: 260px;
+    width: 200px;
     background: #73fbd3;
 }
 
 .footer-button-primary {
-    border-color: rgba(140, 235, 255, 1.00);
-    background: linear-gradient(180deg, rgba(72, 155, 185, 0.98), rgba(16, 72, 96, 0.98));
+    border-color: rgba(142, 255, 184, 0.78);
+    background: linear-gradient(180deg, rgba(131, 189, 139, 0.98), rgba(14, 120, 73, 0.98));
     color: #ffffff;
     box-shadow: 0 0 24px rgba(80, 210, 255, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
@@ -557,11 +624,16 @@ button.window-control {
     font-size: 13px;
     font-weight: 800;
     box-shadow: 0 0 10px rgba(72, 205, 245, 0.14);
+    opacity: 0.96;
+    transform: translate(0px, 0px) scale(1) rotate(0deg);
+    transition: transform 120ms ease-out, opacity 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out;
 }
 
 button.window-control:hover {
     border-color: rgba(142, 234, 255, 0.92);
     background: linear-gradient(180deg, rgba(37, 105, 132, 0.98), rgba(8, 28, 42, 0.98));
+    opacity: 1;
+    transform: translate(0px, -1px) scale(1.01) rotate(0deg);
 }
 
 

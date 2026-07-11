@@ -1,0 +1,32 @@
+plugins {
+    id 'java-library'
+}
+
+/**
+ * FrozenLands application implementation.
+ *
+ * The application compiles only against the engine core and HtmlDom prelaunch UI.
+ * Runtime modules stay external JARs and are added as runtimeOnly so ServiceLoader
+ * can discover EngineRuntimeInstaller / WindowIconDecoder providers when the app
+ * is launched directly from this project.
+ */
+dependencies {
+    implementation project(':core')
+    implementation 'dev.takesome:html-dom-aio:1.0.22'
+
+    runtimeOnly project(':bootstrap')
+    runtimeOnly project(':ico-parser')
+    runtimeOnly project(':provider-core')
+    runtimeOnly project(':provider-sound')
+    runtimeOnly project(':provider-material')
+    runtimeOnly project(':provider-model')
+    runtimeOnly project(':sky')
+    runtimeOnly project(':terrain')
+    runtimeOnly project(':shaders')
+    runtimeOnly project(':particles')
+    runtimeOnly project(':player')
+    runtimeOnly project(':world')
+    runtimeOnly project(':weather')
+    runtimeOnly project(':save')
+    runtimeOnly project(':ui')
+}

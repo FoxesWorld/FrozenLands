@@ -1,0 +1,7 @@
+{
+  "html": {
+    "enabled": true,
+    "startupScreen": "main-menu",
+    "uiRootProperty": "frozenlands.uiRoot"
+  }
+}

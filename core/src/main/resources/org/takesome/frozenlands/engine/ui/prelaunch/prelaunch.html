@@ -9,9 +9,13 @@
 <main class="prelaunch-root">
     <div id="window-frame" class="window-frame"></div>
     <div id="window-titlebar" class="window-titlebar" data-window-drag="true">
-        <div class="window-app-icon"><span class="pl-icon">&#xf085;</span></div>
-        <div class="window-brand">TakeSome() Runtime</div>
-        <div class="window-title">FrozenLands Launcher</div>
+        <div class="window-brand-row">
+            <div class="window-app-icon" aria-hidden="true"></div>
+            <div class="window-title-stack">
+                <div class="window-title">FrozenLands Launcher</div>
+                <div class="window-brand">TakeSome() Runtime</div>
+            </div>
+        </div>
         <button id="window-close" class="window-control window-close" data-action="window.close">×</button>
     </div>
 
@@ -40,7 +44,7 @@
         <h2 id="control-title">Launch Control</h2>
 
         <div id="profile-card" class="setting-block block-profile">
-            <div class="setting-title"><span class="icon pl-icon">&#xf085;</span> Profile</div>
+            <div class="setting-title"><span class="icon pl-icon cogs">&#xf085;</span> Profile</div>
             <div class="setting-hint">Fast selector for common display setups.</div>
             <button id="preset-performance" class="choice-button" data-action="preset.performance">Performance</button>
             <button id="preset-balanced" class="choice-button" data-action="preset.balanced">Balanced</button>
@@ -49,7 +53,7 @@
         </div>
 
         <div id="resolution-card" class="setting-block block-resolution">
-            <div class="setting-title"><span class="icon pl-icon">&#xf108;</span> Resolution</div>
+            <div class="setting-title"><span class="icon pl-icon monitor">&#xf108;</span> Resolution</div>
             <div class="setting-hint">Native monitor resolution is marked as recommended.</div>
             <button id="resolution-prev" class="step-button" data-action="resolution.prev">‹</button>
             <span id="resolution-value" class="step-value">1920 × 1080</span>
@@ -57,13 +61,13 @@
         </div>
 
         <div id="display-card" class="setting-block block-display">
-            <div class="setting-title"><span class="icon pl-icon">&#xf065;</span> Display mode</div>
+            <div class="setting-title"><span class="icon pl-icon displayMode">&#xf065;</span> Display mode</div>
             <div class="setting-hint">Windowed or exclusive fullscreen.</div>
             <button id="fullscreen-toggle" class="wide-button" data-action="fullscreen.toggle">Windowed</button>
         </div>
 
         <div id="aa-card" class="setting-block block-aa">
-            <div class="setting-title"><span class="icon pl-icon">&#xf0eb;</span> Anti-aliasing</div>
+            <div class="setting-title"><span class="icon pl-icon antiAliasing">&#xf0eb;</span> Anti-aliasing</div>
             <div class="setting-hint">Windowed MSAA level.</div>
             <button id="msaa-prev" class="step-button" data-action="msaa.prev">‹</button>
             <span id="msaa-value" class="step-value">Off</span>
@@ -75,16 +79,7 @@
             <button id="vsync-toggle" class="half-button" data-action="vsync.toggle">VSync: Off</button>
         </div>
 
-        <div id="action-bar" class="action-bar">
-            <button id="prelaunch-reset" class="footer-button footer-reset" data-action="settings.reset">Reset
-                defaults
-            </button>
-            <button id="prelaunch-cancel" class="footer-button footer-cancel" data-action="dialog.cancel">Cancel
-            </button>
-            <button id="prelaunch-launch" class="footer-button footer-launch footer-button-primary"
-                    data-action="dialog.launch">Launch FrozenLands
-            </button>
-        </div>
+        <div id="action-bar" class="action-bar"><button id="prelaunch-reset" class="footer-button footer-reset" data-action="settings.reset">Reset defaults</button><button id="prelaunch-cancel" class="footer-button footer-cancel" data-action="dialog.cancel">Cancel</button><button id="prelaunch-launch" class="footer-button footer-launch footer-button-primary" data-action="dialog.launch">Launch FrozenLands</button></div>
     </section>
 </main>
 </body>

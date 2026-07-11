@@ -2,20 +2,16 @@ plugins {
     id 'application'
 }
 
+def frozenLandsHFrameNativeDll = rootProject.file('../HFrame/hframe-core/build/native/win32/hframe_native_win32.dll')
+
+// Preserve colors in a real terminal, but do not force ANSI through Gradle
+// JavaExec where escape sequences are commonly printed as literal text.
 def frozenLandsAnsiJvmArgs = [
         '-Dlog4j2.skipJansi=false',
-        '-Dlog4j.skipJansi=false',
-        '-Dlog4j2.enableJansi=true',
-        '-Dlog4j2.forceAnsi=true',
-        '-Djansi.mode=force',
-        '-Djansi.out.mode=force',
-        '-Djansi.err.mode=force',
-        '-Djansi.passthrough=true',
-        '-Djansi.strip=false'
+        '-Dlog4j.skipJansi=false'
 ]
-
 application {
-    mainClass = 'org.takesome.frozenlands.desktop.Boot'
+    mainClass = 'org.takesome.frozenlands.FrozenLands'
     applicationDefaultJvmArgs = frozenLandsAnsiJvmArgs
 }
 
@@ -31,7 +27,7 @@ sourceSets {
 }
 
 dependencies {
-    implementation project(':core')
+    implementation project(':frozenlands-app')
 
     implementation project(':bootstrap')
     implementation project(':ico-parser')
@@ -47,6 +43,7 @@ dependencies {
     implementation project(':world')
     implementation project(':weather')
     implementation project(':save')
+    implementation project(':ui')
 }
 
 
@@ -71,6 +68,13 @@ distributions {
 
             from(rootProject.projectDir) {
                 include '*.dll'
+            }
+
+            if (frozenLandsHFrameNativeDll.isFile()) {
+                from(frozenLandsHFrameNativeDll.parentFile) {
+                    include frozenLandsHFrameNativeDll.name
+                    into '.'
+                }
             }
         }
     }
@@ -119,11 +123,24 @@ tasks.named('run', JavaExec) {
             'frozenlands.prelaunch.devTools',
             'frozenlands.prelaunch.devTools.windowType',
             'frozenlands.prelaunch.devTools.zOrder',
-            'frozenlands.prelaunch.devTools.closePolicy'
+            'frozenlands.prelaunch.devTools.closePolicy',
+            'frozenlands.hframe.enabled',
+            'frozenlands.hframe.strict',
+            'frozenlands.hframe.title',
+            'frozenlands.hframe.width',
+            'frozenlands.hframe.height',
+            'frozenlands.hframe.probeMillis',
+            'frozenlands.hframe.keepOpen',
+            'hframe.native.path'
     ].each { propertyName ->
         def propertyValue = System.getProperty(propertyName)
         if (propertyValue != null && !propertyValue.isBlank()) {
             jvmArgs "-D${propertyName}=${propertyValue}"
         }
+    }
+
+    // Auto-wire local HFrame native DLL for developer runs when the DLL has been built.
+    if (System.getProperty('hframe.native.path') == null && frozenLandsHFrameNativeDll.isFile()) {
+        jvmArgs "-Dhframe.native.path=${frozenLandsHFrameNativeDll.absolutePath}"
     }
 }

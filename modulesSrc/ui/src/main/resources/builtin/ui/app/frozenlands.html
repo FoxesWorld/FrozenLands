@@ -1,0 +1,80 @@
+<!doctype html>
+<html id="fl-root" data-screen="main-menu" data-mode="boot">
+<head>
+  <meta charset="utf-8">
+  <title>FrozenLands</title>
+</head>
+<body>
+  <div id="ui-root" class="ui-root">
+    <div id="main-menu-background" class="main-menu-background"></div>
+    <div id="screen-overlay" class="screen-overlay"></div>
+    <div id="screen-main-menu" class="screen main-menu" data-visible="true" style="display: block;">
+      <div class="menu-card">
+        <p class="kicker">TAKE SOME / FROZENLANDS</p>
+        <p class="title">FrozenLands</p>
+        <p class="subtitle">Northern expedition control shell.</p>
+        <div class="menu-separator"></div>
+        <p id="main-menu-status" class="status">Ready for expedition.</p>
+
+        <form id="main-menu-form" class="menu-form" action="menu.main" command="navigation" title="Main menu navigation" data-form="main-menu">
+          <button id="btn-new-game" class="menu-button primary" data-event="ui.menu.newGame" data-action="game.new">New Expedition</button>
+          <button id="btn-continue" class="menu-button" data-event="ui.menu.continue" data-action="game.continue">Continue</button>
+          <button id="btn-refresh-saves" class="menu-button" data-event="ui.menu.refreshSaves" data-action="game.refreshSaves">Refresh Saves</button>
+          <button id="btn-exit" class="menu-button danger" data-event="ui.menu.exitToDesktop" data-action="game.exitToDesktop">Exit</button>
+
+          <div class="save-box" aria-label="Save slots">
+            <div class="save-panel-header">
+              <p class="save-title">Saves</p>
+              <div class="save-title-rule"><span></span></div>
+              <p class="save-section-label">SAVE SLOTS</p>
+              <p id="save-count" class="save-count">Checking saves</p>
+            </div>
+            <div id="save-list-shell-runtime" class="save-list-shell no-scroll">
+              <div id="save-list" class="save-list"></div>
+              <div class="save-scrollbar" aria-hidden="true">
+                <div class="save-scroll-arrow up"><i class="fa-solid fa-chevron-up"></i></div>
+                <div class="save-scroll-track"><div class="save-scroll-thumb"></div></div>
+                <div class="save-scroll-arrow down"><i class="fa-solid fa-chevron-down"></i></div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="screen-hud" class="screen hud" data-visible="false" style="display: none;">
+      <div class="hud-panel">
+        <p class="kicker">FROZENLANDS</p>
+        <p class="hud-text">HUD active. Press F10 or ESC for pause.</p>
+      </div>
+    </div>
+
+    <div id="screen-pause" class="screen pause" data-visible="false" style="display: none;">
+      <div class="menu-card pause-card">
+        <p class="kicker">SYSTEM</p>
+        <p class="title">Paused</p>
+        <p id="pause-load-status" class="status">Expedition paused.</p>
+
+        <form id="pause-menu-form" class="menu-form" action="menu.pause" command="navigation" title="Pause menu navigation" data-form="pause-menu">
+          <button id="btn-resume" class="menu-button primary" data-event="ui.menu.resume" data-action="game.resume">Resume</button>
+          <button id="btn-save" class="menu-button" data-event="ui.menu.save" data-action="game.save">Save</button>
+          <button id="btn-main-menu" class="menu-button" data-event="ui.menu.mainMenu" data-action="ui.mainMenu">Main Menu</button>
+          <button id="btn-pause-exit" class="menu-button danger" data-event="ui.menu.exitToDesktop" data-action="game.exitToDesktop">Exit</button>
+
+          <div class="pause-save-box">
+            <p class="pause-save-title">Saves</p>
+            <div id="pause-save-list-shell-runtime" class="pause-save-list-shell no-scroll">
+              <div id="pause-save-list" class="save-list pause-save-list"></div>
+              <div class="save-scrollbar pause-scrollbar" aria-hidden="true">
+                <div class="save-scroll-arrow up"><i class="fa-solid fa-chevron-up"></i></div>
+                <div class="save-scroll-track"><div class="save-scroll-thumb"></div></div>
+                <div class="save-scroll-arrow down"><i class="fa-solid fa-chevron-down"></i></div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

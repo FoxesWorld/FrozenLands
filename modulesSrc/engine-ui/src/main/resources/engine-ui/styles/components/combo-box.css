@@ -1,5 +1,0 @@
-combo-box, combo_box, combobox, select { display: inline-block; margin: 0; padding: 2px 4px; border: 1px solid #d1a1518c; background-color: #141f26f5; color: #ffedbfff; icon-color: #ffc75af5; closed-icon: chevron-down; open-icon: chevron-up; cursor: pointer; transition-property: background-color,border-color,color,icon-color,opacity; transition-duration: 160ms; transition-timing-function: ease; }
-combo-box:hover, combo_box:hover, combobox:hover, select:hover { background-color: #1c333ffa; border-color: #d1a151bb; }
-combo-box:active, combo_box:active, combobox:active, select:active { background-color: #213847fa; border-color: #d1a151eb; icon-color: #ffe18aff; }
-combo-box:open, combo_box:open, combobox:open, select:open { background-color: #213847fa; border-color: #d1a151eb; icon-color: #ffe18aff; }
-combo-box:disabled, combo_box:disabled, combobox:disabled, select:disabled { background-color: #12121480; border-color: #6e6e7457; color: #ffedbf6b; icon-color: #ffc75a59; pointer-events: none; opacity: 0.5; }

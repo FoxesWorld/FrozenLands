@@ -1,4 +1,0 @@
-button { display: inline-block; margin: 0; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding: 2px 6px; padding-top: 2px; padding-right: 6px; padding-bottom: 2px; padding-left: 6px; border: 1px solid #9ca3af; background-color: transparent; color: inherit; cursor: pointer; transition: opacity 120ms ease, transform 120ms ease, background-color 120ms ease, border-color 120ms ease; }
-button:hover { opacity: 0.96; transform: translate(0px, 1px) scale(1.01); }
-button:active { opacity: 0.88; transform: translate(0px, 2px) scale(0.99); }
-button:disabled { pointer-events: none; opacity: 0.5; transform: none; }

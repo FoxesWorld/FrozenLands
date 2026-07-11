@@ -107,11 +107,13 @@ public final class JmeHtmlDomInputBridge implements RawInputListener {
         int when = now();
         dispatch(panel, new MouseEvent(panel, id, when, modifiers, x, y, 1, false, awtButton));
 
+        boolean directClickHandled = false;
         if (event.isReleased()) {
+            directClickHandled = dispatchUiPointerClick(x, y);
             dispatch(panel, new MouseEvent(panel, MouseEvent.MOUSE_CLICKED, when, modifiers, x, y, 1, false, awtButton));
         }
 
-        if (capturesPointer(x, y)) {
+        if (directClickHandled || capturesPointer(x, y)) {
             event.setConsumed();
         }
     }
@@ -173,6 +175,25 @@ public final class JmeHtmlDomInputBridge implements RawInputListener {
             }
         }
         return false;
+    }
+
+
+    private boolean dispatchUiPointerClick(int x, int y) {
+        UiDomElement element = interactiveHitAt(x, y);
+        if (element == null) {
+            context.getLogger().debug("Html UI pointer click miss x={} y={} screen={}", x, y, runtime.screen());
+            return false;
+        }
+        context.getLogger().info(
+                "Html UI pointer click hit x={} y={} elementId={} action={} event={} screen={}",
+                x,
+                y,
+                element.id(),
+                element.data("action", ""),
+                element.data("event", ""),
+                runtime.screen()
+        );
+        return runtime.emitPointerClick(element, "ui-pointer-click");
     }
 
     private boolean capturesPointer(int x, int y) {

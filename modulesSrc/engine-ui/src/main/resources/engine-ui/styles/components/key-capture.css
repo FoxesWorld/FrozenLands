@@ -1,4 +1,0 @@
-key-capture, input-capture { display: inline-block; margin: 0; padding: 2px 8px; border: 1px solid #9ca3af; background-color: transparent; color: inherit; width: 170px; height: 32px; cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease, transform 120ms ease; }
-key-capture:hover, input-capture:hover { border-color: #d1a151dd; transform: translate(0px, 1px); }
-key-capture:focus, input-capture:focus, key-capture:active, input-capture:active { border-color: #ffe18aff; background-color: #10182033; }
-key-capture:disabled, input-capture:disabled { pointer-events: none; opacity: 0.5; transform: none; }

@@ -1,4 +1,0 @@
-input, textarea { display: inline-block; margin: 0; padding: 2px 4px; border: 1px solid #9ca3af; background-color: transparent; color: inherit; cursor: text; transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease; }
-input:focus, textarea:focus { border-color: #d1a151ff; background-color: #10182018; }
-textarea { padding: 4px; white-space: pre-wrap; }
-input:disabled, textarea:disabled { pointer-events: none; opacity: 0.5; }

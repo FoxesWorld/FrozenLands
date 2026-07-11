@@ -1,4 +1,0 @@
-slider, range { display: inline-block; margin: 0; padding: 0; min-width: 120px; width: 200px; height: 24px; cursor: pointer; transition: opacity 120ms ease, transform 120ms ease; }
-slider:hover, range:hover { transform: translate(0px, 1px); }
-slider:active, range:active { transform: translate(0px, 2px); }
-slider:disabled, range:disabled { pointer-events: none; opacity: 0.5; transform: none; }

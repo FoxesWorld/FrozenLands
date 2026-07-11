@@ -4,7 +4,7 @@
   "name": "Take Some() Frozen Lands",
   "type": "game",
   "description": "Take Some() Frozen Lands game project and runtime module catalog.",
-  "entrypoint": "org.takesome.frozenlands.desktop.DesktopLauncher",
+  "entrypoint": "org.takesome.frozenlands.FrozenLands",
   "namespace": "org.takesome.frozenlands",
   "sourceRoots": {
     "core": "core/src",
@@ -14,7 +14,9 @@
     "modules": "modulesSrc",
     "desktop": "desktop/src",
     "desktopJava": "desktop/src/main/java",
-    "assets": "assets"
+    "assets": "assets",
+    "frozenlandsApp": "frozenlands-app/src",
+    "frozenlandsAppJava": "frozenlands-app/src/main/java"
   },
   "moduleCatalog": [
     "core/module.index.json",
@@ -45,9 +47,19 @@
       "module": "desktop",
       "modulePath": "desktop",
       "type": "application",
-      "role": "desktop-launcher",
+      "role": "desktop-distribution",
       "layer": "app",
-      "sourceRoot": "desktop"
+      "sourceRoot": "desktop",
+      "description": "Desktop distribution/run wrapper. No Java launcher source; main class is frozenlands-app entrypoint."
+    },
+    {
+      "id": "frozenlands.app",
+      "module": "frozenlands-app",
+      "modulePath": "frozenlands-app",
+      "type": "application",
+      "role": "game-implementation",
+      "layer": "app",
+      "sourceRoot": "frozenlands-app"
     },
     {
       "id": "engine.bootstrap",
@@ -165,6 +177,15 @@
       "role": "runtime",
       "layer": "runtime",
       "sourceRoot": "modulesSrc/terrain"
+    },
+    {
+      "id": "frozenlands.ui",
+      "module": "ui",
+      "modulePath": "modulesSrc/ui",
+      "type": "runtime",
+      "role": "runtime-ui",
+      "layer": "ui",
+      "sourceRoot": "modulesSrc/ui"
     },
     {
       "id": "engine.weather",

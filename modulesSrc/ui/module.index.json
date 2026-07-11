@@ -1,0 +1,78 @@
+{
+  "schema": "frozenlands.module.index.v1",
+  "module": "ui",
+  "modulePath": "modulesSrc/ui",
+  "id": "frozenlands.ui",
+  "type": "runtime",
+  "description": "Unified HtmlDom UI provider for FrozenLands runtime screens, HUD, menu and save-list bridge.",
+  "project": {
+    "id": "takesome.frozenlands",
+    "name": "Take Some() Frozen Lands",
+    "projectModule": true,
+    "moduleRole": "runtime",
+    "moduleLayer": "ui",
+    "sourceRoot": "modulesSrc/ui"
+  },
+  "provider": {
+    "id": "htmldom",
+    "role": "unified-ui-provider",
+    "goldenReference": "engine-ui"
+  },
+  "dependencies": [
+    "engine.save",
+    "engine.world"
+  ],
+  "lua": {
+    "api": "src/main/resources/scripts/lua/api.lua",
+    "events": "src/main/resources/scripts/lua/events.lua",
+    "usage": "local ui = require('frozenlands.ui'); ui.call('status', {})",
+    "handlers": [
+      {
+        "topic": "ui.menu.*",
+        "script": "src/main/resources/scripts/lua/events/ui_menu_event.lua",
+        "replayLatest": false
+      },
+      {
+        "topic": "player.spawned",
+        "script": "src/main/resources/scripts/lua/events/ui_menu_event.lua",
+        "replayLatest": false
+      },
+      {
+        "topic": "runtime.game.ready",
+        "script": "src/main/resources/scripts/lua/events/ui_menu_event.lua",
+        "replayLatest": false
+      },
+      {
+        "topic": "runtime.game.failed",
+        "script": "src/main/resources/scripts/lua/events/ui_menu_event.lua",
+        "replayLatest": false
+      },
+      {
+        "topic": "runtime.game.starting",
+        "script": "src/main/resources/scripts/lua/events/ui_menu_event.lua",
+        "replayLatest": false
+      },
+      {
+        "topic": "runtime.game.module.loading",
+        "script": "src/main/resources/scripts/lua/events/ui_menu_event.lua",
+        "replayLatest": false
+      },
+      {
+        "topic": "runtime.game.module.loaded",
+        "script": "src/main/resources/scripts/lua/events/ui_menu_event.lua",
+        "replayLatest": false
+      },
+      {
+        "topic": "runtime.game.module.installing",
+        "script": "src/main/resources/scripts/lua/events/ui_menu_event.lua",
+        "replayLatest": false
+      }
+    ]
+  },
+  "runtime": {
+    "configs": {
+      "runtime": "src/main/resources/config/runtime.json"
+    },
+    "assetRoots": []
+  }
+}

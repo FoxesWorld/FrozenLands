@@ -3,6 +3,7 @@ rootProject.name = 'FrozenLands'
 include 'assets'
 include 'core'
 include 'desktop'
+include 'frozenlands-app'
 
 def modulesRoot = file('modulesSrc')
 if (modulesRoot.isDirectory()) {

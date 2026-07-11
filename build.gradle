@@ -38,7 +38,7 @@ def moduleIndexFiles = fileTree(layout.projectDirectory.dir('modulesSrc')) {
     include '*/module.index.json'
 }
 def configuredProjectNames = subprojects.collect { it.name }.toSet()
-def indexedRootProjectNames = ['assets', 'core', 'desktop'] as Set
+def indexedRootProjectNames = ['assets', 'core', 'desktop', 'frozenlands-app'] as Set
 
 tasks.register('validateProjectIndex') {
     group = 'verification'

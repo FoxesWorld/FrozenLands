@@ -8,7 +8,7 @@
     </Properties>
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="${ConsolePattern}" disableAnsi="false" noConsoleNoAnsi="false"/>
+            <PatternLayout pattern="${ConsolePattern}" disableAnsi="false" noConsoleNoAnsi="true"/>
         </Console>
         <File name="File" fileName="logs/latest.log">
             <PatternLayout pattern="${FilePattern}"/>

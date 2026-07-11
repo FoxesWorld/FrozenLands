@@ -1,5 +1,0 @@
-checkbox { display: inline-block; margin: 0; padding: 0; width: 120px; height: 24px; background-color: #1f2930eb; inner-color: #05080ad6; check-color: #ffc85cff; border-color: #d1a1518c; border-width: 1; color: #ffedbfff; transition-property: background-color,border-color,color,check-color,inner-color,opacity; transition-duration: 140ms; transition-timing-function: ease; }
-checkbox:hover { background-color: #2e515cf5; border-color: #d1a151c2; }
-checkbox:active { background-color: #1c3944ff; inner-color: #0a1013f0; border-color: #ffe18aff; }
-checkbox:checked { background-color: #3a4a26f5; inner-color: #111906e8; check-color: #ffe18aff; border-color: #ffe18ae8; }
-checkbox:disabled { background-color: #17171980; inner-color: #05050560; border-color: #6e6e7457; color: #ffedbf6b; check-color: #ffc85c5c; pointer-events: none; opacity: 0.5; }

@@ -1,0 +1,665 @@
+@keyframes fl-button-hover-glow {
+  from { opacity: 0.92; }
+  to { opacity: 1; }
+}
+
+html {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  color: #eaf4ff;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+}
+
+body {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  color: #eaf4ff;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+}
+
+.ui-root,
+.screen {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+.screen[data-visible="false"] {
+  display: none;
+}
+
+.menu-card {
+  display: block;
+  width: 336px;
+  height: 660px;
+  padding: 28px;
+  margin: 0;
+  background-image: url("assets/textures/sprites/panels/generated/menu_panel.png");
+  background-size: fill;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  border: 0;
+}
+
+.pause-card {
+  width: 428px;
+  height: 329px;
+  background-image: url("assets/textures/sprites/panels/panel_asset_04.png");
+  background-size: fill;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.kicker {
+  display: block;
+  margin: 0 0 14px 0;
+  color: #b5e5ff;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 16px;
+}
+
+.title {
+  display: block;
+  margin: 0 0 12px 0;
+  color: #ffffff;
+  font-size: 40px;
+  font-weight: bold;
+}
+
+.subtitle {
+  display: block;
+  margin: 0 0 8px 0;
+  color: #d7ecff;
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 16px;
+}
+
+.menu-separator {
+  display: block;
+  width: 315px;
+  height: 18px;
+  margin: 4px 0 8px 0;
+  background-image: url("assets/textures/sprites/panels/generated/separator_line.png");
+  background-size: fill;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: transparent;
+}
+
+.status {
+  display: block;
+  width: 300px;
+  height: 20px;
+  margin: 0 0 10px 0;
+  padding: 0 4px;
+  background: transparent;
+  border: 0;
+  color: #eaf4ff;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 20px;
+  vertical-align: middle;
+}
+
+.status.mini {
+  display: none;
+}
+
+.menu-form {
+  display: block;
+  width: 320px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.pause-card .menu-form {
+  width: 320px;
+}
+
+.menu-button {
+  display: block;
+  width: 320px;
+  height: 58px;
+  margin: 0 0 6px 0;
+  padding: 0 18px 0 24px;
+  background-image: url("assets/textures/sprites/buttons/buttonLong/button.png");
+  background-size: fill;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  border: 0;
+  color: #f4fbff;
+  text-align: left;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 58px;
+  vertical-align: middle;
+  opacity: 0.96;
+  transform: translate(0px, 0px) scale(1) rotate(0deg);
+  transition: transform 140ms ease-out, opacity 140ms ease-out, color 140ms ease-out;
+}
+
+.menu-button.primary {
+  background-image: url("assets/textures/sprites/buttons/buttonLong/button_hover.png");
+}
+
+.menu-button.danger {
+  background-image: url("assets/textures/sprites/buttons/buttonLong/button_active.png");
+}
+
+#btn-exit,
+#btn-pause-exit {
+  background-image: url("assets/textures/sprites/buttons/buttonLong/button_active.png");
+}
+
+.menu-button:hover,
+.menu-button.primary:hover,
+.menu-button.danger:hover,
+.save-slot-button:hover {
+  background-image: url("assets/textures/sprites/buttons/buttonLong/button_hover.png");
+  opacity: 1;
+  transform: translate(4px, 0px) scale(1.018) rotate(0deg);
+  animation: fl-button-hover-glow 900ms ease-in-out infinite alternate both;
+}
+
+.menu-button.danger:hover {
+  background-image: url("assets/textures/sprites/buttons/buttonLong/button_active.png");
+}
+
+#btn-exit:hover,
+#btn-pause-exit:hover {
+  background-image: url("assets/textures/sprites/buttons/buttonLong/button_active.png");
+  opacity: 1;
+  transform: translate(4px, 0px) scale(1.018) rotate(0deg);
+  animation: fl-button-hover-glow 900ms ease-in-out infinite alternate both;
+}
+
+.menu-button:active,
+.menu-button.primary:active,
+.menu-button.danger:active,
+.save-slot-button:active {
+  background-image: url("assets/textures/sprites/buttons/buttonLong/button_active.png");
+  opacity: 1;
+  transform: translate(2px, 1px) scale(0.995) rotate(0deg);
+}
+
+#btn-exit:active,
+#btn-pause-exit:active {
+  background-image: url("assets/textures/sprites/buttons/buttonLong/button_active.png");
+  opacity: 1;
+  transform: translate(2px, 1px) scale(0.995) rotate(0deg);
+}
+
+.menu-button[disabled],
+.save-slot-button[disabled] {
+  background-image: url("assets/textures/sprites/buttons/buttonLong/button_disabled.png");
+  color: #8a98a5;
+  opacity: 0.72;
+  transform: translate(0px, 0px) scale(1) rotate(0deg);
+  animation: none;
+}
+
+
+.save-box {
+  display: block;
+  width: 292px;
+  height: 128px;
+  margin: 14px 0 0 0;
+  padding: 12px 14px 12px 14px;
+  overflow: hidden;
+  background-image: none;
+  background-color: rgba(15, 35, 50, 0.72);
+  border: 1px solid rgba(174, 224, 255, 0.52);
+  border-radius: 12px;
+  color: #f4fbff;
+}
+
+.save-panel-header {
+  display: block;
+  position: relative;
+  width: 292px;
+  height: 34px;
+  margin: 0 0 7px 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.save-title {
+  display: block;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 18px;
+}
+
+.save-title-rule,
+.save-title-rule span {
+  display: none;
+}
+
+.save-section-label {
+  display: block;
+  height: 13px;
+  margin: 1px 0 0 0;
+  padding: 0;
+  color: #a9dfff;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 13px;
+  letter-spacing: 1px;
+}
+
+.save-count {
+  display: block;
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  width: 92px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  color: #beddf0;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 16px;
+  text-align: right;
+}
+
+.save-list-shell {
+  display: block;
+  position: relative;
+  width: 292px;
+  height: 84px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: rgba(6, 18, 29, 0.34);
+  border: 1px solid rgba(139, 199, 232, 0.24);
+  border-radius: 9px;
+}
+
+.save-list {
+  display: block;
+  width: 252px;
+  height: 72px;
+  margin: 6px 0 0 6px;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: transparent;
+  border: 0;
+}
+
+.save-list-shell.no-scroll .save-scrollbar {
+  display: none;
+}
+
+.save-list-shell.no-scroll .save-list {
+  width: 274px;
+  overflow-y: hidden;
+}
+
+.save-slot-button {
+  display: block;
+  position: relative;
+  width: 240px;
+  height: 34px;
+  margin: 0 0 6px 0;
+  padding: 0;
+  overflow: hidden;
+  background-image: none;
+  background-color: rgba(22, 45, 63, 0.76);
+  border: 1px solid rgba(205, 238, 255, 0.68);
+  border-radius: 8px;
+  color: #f8fdff;
+  text-align: left;
+  line-height: normal;
+  vertical-align: middle;
+  opacity: 0.98;
+  transform: translate(0px, 0px) scale(1) rotate(0deg);
+  transition: transform 120ms ease-out, opacity 120ms ease-out, color 120ms ease-out, background-color 120ms ease-out;
+}
+
+.save-list-shell.no-scroll .save-slot-button {
+  width: 262px;
+}
+
+.save-slot-button:hover {
+  background-image: none;
+  background-color: rgba(32, 63, 84, 0.9);
+  opacity: 1;
+  transform: translate(2px, 0px) scale(1.006) rotate(0deg);
+  animation: fl-button-hover-glow 900ms ease-in-out infinite alternate both;
+}
+
+.save-slot-button:active {
+  background-image: none;
+  background-color: rgba(16, 36, 54, 0.96);
+  transform: translate(1px, 1px) scale(0.998) rotate(0deg);
+}
+
+.save-slot-button.selected {
+  background-image: none;
+  background-color: rgba(18, 50, 76, 0.96);
+  border: 1px solid rgba(105, 213, 255, 1.0);
+}
+
+.save-slot-name {
+  display: block;
+  position: absolute;
+  left: 11px;
+  top: 3px;
+  width: 132px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 16px;
+  text-align: left;
+}
+
+.save-slot-meta {
+  display: block;
+  position: absolute;
+  left: 11px;
+  top: 19px;
+  width: 220px;
+  height: 13px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  color: #bdd4e8;
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 13px;
+  text-align: left;
+}
+
+.save-slot-clock {
+  display: inline-block;
+  width: 12px;
+  height: 13px;
+  margin: 0 5px 0 0;
+  padding: 0;
+  color: #a9c6dc;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 13px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.save-slot-time {
+  display: inline-block;
+  height: 13px;
+  margin: 0;
+  padding: 0;
+  color: #bdd4e8;
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 13px;
+  vertical-align: middle;
+}
+
+.save-empty {
+  display: block;
+  width: 224px;
+  height: 38px;
+  margin: 7px 0 0 7px;
+  padding: 7px 9px;
+  background-color: rgba(21, 45, 64, 0.62);
+  border: 1px solid rgba(174, 224, 255, 0.42);
+  border-radius: 8px;
+  color: #dceef8;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 16px;
+}
+
+.save-scrollbar {
+  display: block;
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  width: 22px;
+  height: 74px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.save-scroll-arrow {
+  display: block;
+  width: 22px;
+  height: 11px;
+  margin: 0;
+  padding: 0;
+  color: #b9dcf4;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 11px;
+  text-align: center;
+}
+
+.save-scroll-track {
+  display: block;
+  width: 11px;
+  height: 48px;
+  margin: 2px auto;
+  padding: 0;
+  background-color: rgba(10, 23, 35, 0.64);
+  border: 1px solid rgba(174, 224, 255, 0.36);
+  border-radius: 8px;
+}
+
+.save-scroll-thumb {
+  display: block;
+  width: 6px;
+  height: 20px;
+  margin: 5px auto 0 auto;
+  padding: 0;
+  background-color: rgba(115, 213, 255, 0.96);
+  border: 1px solid rgba(220, 250, 255, 0.72);
+  border-radius: 8px;
+}
+
+.pause-save-box {
+  display: block;
+  width: 320px;
+  height: 132px;
+  margin-top: 10px;
+  padding: 10px;
+  overflow: hidden;
+  background-color: rgba(15, 34, 48, 0.78);
+  border: 1px solid rgba(174, 224, 255, 0.5);
+  border-radius: 12px;
+}
+
+.pause-save-title {
+  display: block;
+  height: 20px;
+  margin: 0 0 6px 0;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 20px;
+}
+
+.pause-save-list-shell {
+  display: block;
+  position: relative;
+  width: 300px;
+  height: 96px;
+  overflow: hidden;
+}
+
+.pause-save-list-shell.no-scroll .save-scrollbar {
+  display: none;
+}
+
+.pause-save-list {
+  display: block;
+  width: 258px;
+  height: 96px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.pause-save-list-shell.no-scroll .pause-save-list {
+  width: 300px;
+  overflow-y: hidden;
+}
+
+.pause-save-list .save-slot-button,
+#pause-save-list .save-slot-button {
+  width: 238px;
+  height: 42px;
+  margin: 0 0 6px 0;
+}
+
+.pause-save-list-shell.no-scroll .save-slot-button,
+.pause-save-list-shell.no-scroll #pause-save-list .save-slot-button {
+  width: 286px;
+}
+
+.pause-save-list .save-slot-name,
+#pause-save-list .save-slot-name {
+  left: 12px;
+  top: 7px;
+  width: 120px;
+  height: 26px;
+  font-size: 18px;
+  line-height: 26px;
+}
+
+.pause-save-list .save-slot-meta,
+#pause-save-list .save-slot-meta {
+  left: 128px;
+  top: 10px;
+  width: 100px;
+  height: 22px;
+  font-size: 11px;
+  line-height: 22px;
+}
+
+.pause-save-list .save-slot-clock,
+#pause-save-list .save-slot-clock {
+  display: inline-block;
+  font-size: 9px;
+}
+
+.pause-scrollbar {
+  right: 0;
+  top: 0;
+  width: 24px;
+  height: 96px;
+}
+
+.pause-scrollbar .save-scroll-arrow {
+  width: 24px;
+  height: 16px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.pause-scrollbar .save-scroll-track {
+  width: 14px;
+  height: 56px;
+  margin: 4px auto;
+}
+
+.pause-scrollbar .save-scroll-thumb {
+  width: 8px;
+  height: 24px;
+  margin-top: 8px;
+}
+
+.hud-panel {
+  display: block;
+  width: 360px;
+  height: 90px;
+  padding: 16px;
+  background-image: url("assets/textures/sprites/panels/panel_asset_08.png");
+  background-size: fill;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  border: 0;
+}
+
+.hud-text {
+  display: block;
+  color: #eaf4ff;
+  font-size: 14px;
+}
+
+
+
+/* Stable screen chrome: the background is painted by the main-menu screen
+ * itself, before its child card. The legacy sibling background stays hidden
+ * so it cannot cover the interactive menu layer. */
+.main-menu-background {
+  display: none;
+}
+
+.screen-overlay {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-image: none;
+  background-color: rgba(5, 14, 24, 0.38);
+  border: 0;
+}
+
+.screen-overlay.visible {
+  display: block;
+}
+
+.main-menu {
+  background-image: url(assets/textures/ui/menubg.png);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-color: #07111c;
+}
+
+.pause,
+.hud {
+  background-image: none;
+  background-color: transparent;
+}

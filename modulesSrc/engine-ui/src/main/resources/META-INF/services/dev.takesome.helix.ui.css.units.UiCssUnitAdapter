@@ -1,7 +1,0 @@
-dev.takesome.helix.ui.css.units.unitTypes.AutoCssUnitAdapter
-dev.takesome.helix.ui.css.units.unitTypes.PxCssUnitAdapter
-dev.takesome.helix.ui.css.units.unitTypes.PercentCssUnitAdapter
-dev.takesome.helix.ui.css.units.unitTypes.PtCssUnitAdapter
-dev.takesome.helix.ui.css.units.unitTypes.RemCssUnitAdapter
-dev.takesome.helix.ui.css.units.unitTypes.VwCssUnitAdapter
-dev.takesome.helix.ui.css.units.unitTypes.VhCssUnitAdapter
