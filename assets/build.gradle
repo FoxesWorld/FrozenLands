@@ -21,29 +21,34 @@ tasks.register('validateAssets') {
 
 tasks.register('validateHtmlUiAssets') {
     group = 'verification'
-    description = 'Validates the FrozenLands HTML/CSS UI authoring root under assets/ui.'
+    description = 'Validates the engine-owned FrozenLands HtmlDom UI resources.'
 
-    def uiDir = layout.projectDirectory.dir('ui')
+    def uiDir = rootProject.layout.projectDirectory.dir('modulesSrc/ui/src/main/resources/builtin/ui')
     def manifestFile = uiDir.file('ui.manifest.json')
 
     inputs.dir(uiDir)
     inputs.file(manifestFile)
 
     doLast {
-        logger.lifecycle('HTML UI moved to modulesSrc/ui; old validation skipped.')
-        return
         def uiRoot = uiDir.asFile
         if (!uiRoot.isDirectory()) {
-            throw new GradleException("HTML UI root is missing: ${uiRoot}")
+            throw new GradleException("HtmlDom UI root is missing: ${uiRoot}")
         }
 
         def manifestPath = manifestFile.asFile
         if (!manifestPath.isFile()) {
-            throw new GradleException("HTML UI manifest is missing: ${manifestPath}")
+            throw new GradleException("HtmlDom UI manifest is missing: ${manifestPath}")
         }
 
         def manifest = new JsonSlurper().parse(manifestPath)
         def errors = []
+
+        if ((manifest.schema as String) != 'takesome.frozenlands.ui.v1') {
+            errors << "unsupported UI manifest schema: ${manifest.schema}"
+        }
+        if ((manifest.runtime as String) != 'HtmlDom') {
+            errors << "UI manifest runtime must be HtmlDom: ${manifest.runtime}"
+        }
 
         def requireRelativeFile = { String field, Object value ->
             if (value == null || value.toString().isBlank()) {
@@ -52,7 +57,7 @@ tasks.register('validateHtmlUiAssets') {
             }
             def relative = value.toString().replace('\\', '/')
             if (relative.startsWith('/') || relative.contains('../')) {
-                errors << "${field} must stay inside assets/ui: ${relative}"
+                errors << "${field} must stay inside the HtmlDom UI root: ${relative}"
                 return
             }
             def file = new File(uiRoot, relative)
@@ -65,16 +70,15 @@ tasks.register('validateHtmlUiAssets') {
         manifest.documents?.each { key, value -> requireRelativeFile("documents.${key}", value) }
         manifest.styles?.eachWithIndex { value, index -> requireRelativeFile("styles[${index}]", value) }
         manifest.scripts?.eachWithIndex { value, index -> requireRelativeFile("scripts[${index}]", value) }
-        requireRelativeFile('bindings', manifest.bindings)
 
-        ['app', 'system', 'themes', 'components', 'screens', 'scripts', 'data', 'docs'].each { dirName ->
+        ['app', 'screens', 'scripts'].each { dirName ->
             if (!new File(uiRoot, dirName).isDirectory()) {
                 errors << "required UI directory is missing: ${dirName}"
             }
         }
 
         if (!errors.isEmpty()) {
-            throw new GradleException('HTML UI asset validation failed:\n - ' + errors.join('\n - '))
+            throw new GradleException('HtmlDom UI asset validation failed:\n - ' + errors.join('\n - '))
         }
     }
 }

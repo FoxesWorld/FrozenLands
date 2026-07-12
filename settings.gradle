@@ -24,3 +24,13 @@ if (htmlDomRoot.isDirectory()) {
         }
     }
 }
+
+def skySimulationRoot = file('../SkySimulation')
+def useLocalSkySimulation = !providers.gradleProperty('disableLocalSkySimulation').isPresent()
+if (useLocalSkySimulation && skySimulationRoot.isDirectory()) {
+    includeBuild(skySimulationRoot) {
+        dependencySubstitution {
+            substitute module('dev.takesome:sky-simulation') using project(':SkyLibrary')
+        }
+    }
+}

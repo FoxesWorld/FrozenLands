@@ -4,7 +4,7 @@
   "modulePath": "modulesSrc/sky",
   "id": "engine.sky",
   "type": "runtime",
-  "description": "Sky runtime module.",
+  "description": "Low-level sky renderer and preset adapter; canonical weather state is owned by engine.weather.",
   "project": {
     "id": "takesome.frozenlands",
     "name": "Take Some() Frozen Lands",

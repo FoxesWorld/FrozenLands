@@ -34,6 +34,10 @@ public final class ModuleIndexCatalog {
         return DEFAULT;
     }
 
+    public Path projectRoot() {
+        return projectRoot;
+    }
+
 
     private static Path resolveDefaultProjectRoot() {
         String configuredRoot = System.getProperty("frozenlands.runtimeRoot");

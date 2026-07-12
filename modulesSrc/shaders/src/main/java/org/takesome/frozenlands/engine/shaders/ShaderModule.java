@@ -44,6 +44,48 @@ public final class ShaderModule implements EngineModule {
             shaders.applyShadowSettings(args);
             return shadowSettings();
         }));
+        commands.put("solarShadows.status", ModuleCommand.of(
+                "solarShadows.status",
+                "Return solar shadow runtime status.",
+                args -> result("solarShadows", shaders.solarShadowStatus())
+        ));
+        commands.put("solarShadows.set", ModuleCommand.of(
+                "solarShadows.set",
+                "Update solar shadow settings.",
+                args -> {
+                    shaders.applyShadowSettings(args);
+                    return result("solarShadows", shaders.solarShadowStatus());
+                }
+        ));
+        commands.put("solarShadows.preset", ModuleCommand.of(
+                "solarShadows.preset",
+                "Apply a bounded GPU-budget shadow preset.",
+                args -> {
+                    shaders.applyShadowSettings(Map.of(
+                            "preset",
+                            stringArg(args, "preset", "balanced")
+                    ));
+                    return result("solarShadows", shaders.solarShadowStatus());
+                }
+        ));
+        commands.put("solarShadows.benchmark.start", ModuleCommand.of(
+                "solarShadows.benchmark.start",
+                "Start a 300-1000 frame solar shadow benchmark.",
+                args -> result("benchmark", shaders.startSolarShadowBenchmark(
+                        intArg(args, "frames", 600),
+                        intArg(args, "warmupFrames", 60)
+                ))
+        ));
+        commands.put("solarShadows.benchmark.status", ModuleCommand.of(
+                "solarShadows.benchmark.status",
+                "Return current solar shadow benchmark progress and statistics.",
+                args -> result("benchmark", shaders.solarShadowBenchmarkStatus())
+        ));
+        commands.put("solarShadows.benchmark.cancel", ModuleCommand.of(
+                "solarShadows.benchmark.cancel",
+                "Cancel the active solar shadow benchmark.",
+                args -> result("benchmark", shaders.cancelSolarShadowBenchmark())
+        ));
     }
 
     private Map<String, Object> setPipelineEnabled(Map<String, Object> args) {
@@ -72,6 +114,13 @@ public final class ShaderModule implements EngineModule {
     private String stringArg(Map<String, Object> args, String name, String fallback) {
         Object value = args == null ? null : args.get(name);
         return value == null ? fallback : String.valueOf(value);
+    }
+
+    private int intArg(Map<String, Object> args, String name, int fallback) {
+        Object value = args == null ? null : args.get(name);
+        return value instanceof Number number
+                ? number.intValue()
+                : value == null ? fallback : Integer.parseInt(String.valueOf(value));
     }
 
     private boolean booleanArg(Map<String, Object> args, String name, boolean fallback) {

@@ -36,6 +36,8 @@ public final class SaveModule implements EngineModule {
     private void registerCommands() {
         commands.put("snapshot", ModuleCommand.of("snapshot", "Build an in-memory save snapshot", args -> saveManager.snapshot()));
         commands.put("save", ModuleCommand.of("save", "Write a save slot", args -> saveManager.save(slot(args))));
+        commands.put("overwrite", ModuleCommand.of("overwrite", "Overwrite an existing save slot atomically", args -> saveManager.overwrite(slot(args))));
+        commands.put("delete", ModuleCommand.of("delete", "Delete an existing save slot", args -> saveManager.delete(slot(args))));
         commands.put("load", ModuleCommand.of("load", "Load a save slot and restore runtime state", args -> saveManager.load(slot(args))));
         commands.put("list", ModuleCommand.of("list", "List save slots", args -> result("saves", saveManager.list())));
     }

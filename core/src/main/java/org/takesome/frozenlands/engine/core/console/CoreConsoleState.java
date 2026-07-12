@@ -57,6 +57,9 @@ public final class CoreConsoleState extends BaseAppState implements ActionListen
 
     @Override
     protected void cleanup(Application application) {
+        if (open) {
+            setOpen(false);
+        }
         InputManager inputManager = context.getInputManager();
         inputManager.removeListener(this);
         inputManager.removeRawInputListener(this);
@@ -93,10 +96,15 @@ public final class CoreConsoleState extends BaseAppState implements ActionListen
 
     @Override
     public void onKeyEvent(KeyInputEvent event) {
-        if (!open || !event.isPressed()) {
+        if (!open) {
             return;
         }
+        // F1 must reach the mapped ActionListener so it can close the console.
         if (event.getKeyCode() == KeyInput.KEY_F1) {
+            return;
+        }
+        if (!event.isPressed()) {
+            event.setConsumed();
             return;
         }
         if (handleSpecialKey(event.getKeyCode())) {
@@ -109,10 +117,12 @@ public final class CoreConsoleState extends BaseAppState implements ActionListen
         if (character != null) {
             input.append(character);
             refreshCompletions();
-            event.setConsumed();
             resetCursorBlink();
             refreshView();
         }
+        // Unknown/function keys are still captured so gameplay mappings cannot
+        // observe them while the console owns input focus.
+        event.setConsumed();
     }
 
     private boolean handleSpecialKey(int keyCode) {
@@ -193,7 +203,7 @@ public final class CoreConsoleState extends BaseAppState implements ActionListen
         setOpen(!open);
     }
 
-    private void setOpen(boolean open) {
+    void setOpen(boolean open) {
         if (this.open == open) {
             return;
         }
@@ -205,8 +215,14 @@ public final class CoreConsoleState extends BaseAppState implements ActionListen
             clearCompletions();
         }
         publishVisibilityChanged(open);
-        view.setVisible(open);
+        if (view != null) {
+            view.setVisible(open);
+        }
         refreshView();
+    }
+
+    public boolean isOpen() {
+        return open;
     }
 
     private void resetCursorBlink() {
@@ -524,39 +540,58 @@ public final class CoreConsoleState extends BaseAppState implements ActionListen
 
     @Override public void beginInput() { }
     @Override public void endInput() { }
-    @Override public void onJoyAxisEvent(JoyAxisEvent event) { }
-    @Override public void onJoyButtonEvent(JoyButtonEvent event) { }
+    @Override
+    public void onJoyAxisEvent(JoyAxisEvent event) {
+        if (open) {
+            event.setConsumed();
+        }
+    }
+
+    @Override
+    public void onJoyButtonEvent(JoyButtonEvent event) {
+        if (open) {
+            event.setConsumed();
+        }
+    }
     @Override
     public void onMouseMotionEvent(MouseMotionEvent event) {
-        if (!open || event.getDeltaWheel() == 0) {
+        if (!open) {
             return;
         }
-        scrollOutput(event.getDeltaWheel() > 0 ? visibleOutputRows() : -visibleOutputRows());
+        if (event.getDeltaWheel() != 0) {
+            scrollOutput(event.getDeltaWheel() > 0 ? visibleOutputRows() : -visibleOutputRows());
+            refreshView();
+        }
+        // Captures cursor movement and wheel input before camera/gameplay maps.
         event.setConsumed();
-        refreshView();
     }
 
     @Override
     public void onMouseButtonEvent(MouseButtonEvent event) {
-        if (!open || !event.isPressed() || event.getButtonIndex() != MouseInput.BUTTON_LEFT || view == null) {
+        if (!open) {
             return;
         }
-        if (view.hitClearButton(event.getX(), event.getY())) {
-            clearOutput();
-            event.setConsumed();
-            resetCursorBlink();
-            refreshView();
-            return;
+        if (event.isPressed() && event.getButtonIndex() == MouseInput.BUTTON_LEFT && view != null) {
+            if (view.hitClearButton(event.getX(), event.getY())) {
+                clearOutput();
+                resetCursorBlink();
+                refreshView();
+            } else if (view.hitPasteButton(event.getX(), event.getY())) {
+                pasteClipboard();
+                resetCursorBlink();
+                refreshView();
+            }
         }
-        if (view.hitPasteButton(event.getX(), event.getY())) {
-            pasteClipboard();
-            event.setConsumed();
-            resetCursorBlink();
-            refreshView();
-        }
+        // All buttons, including releases, are captured while console is open.
+        event.setConsumed();
     }
 
-    @Override public void onTouchEvent(TouchEvent event) { }
+    @Override
+    public void onTouchEvent(TouchEvent event) {
+        if (open) {
+            event.setConsumed();
+        }
+    }
 
     private record CompletionEntry(String name, String description) {
     }

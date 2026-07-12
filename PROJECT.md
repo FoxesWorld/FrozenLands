@@ -128,7 +128,7 @@ Root project 'FrozenLands'
 FrozenLands-main/
 ├── assets/                         # public mutable runtime assets
 │   ├── MatDefs/
-│   ├── Models/
+│   ├── models/
 │   ├── sounds/
 │   ├── textures/
 │   ├── themes/

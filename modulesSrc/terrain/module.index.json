@@ -4,7 +4,7 @@
   "modulePath": "modulesSrc/terrain",
   "id": "engine.terrain",
   "type": "runtime",
-  "description": "Terrain runtime module: chunks, height, spawn and terrain config.",
+  "description": "Terrain runtime with chunk streaming and scored congruent placement for ordinary map entities.",
   "project": {
     "id": "takesome.frozenlands",
     "name": "Take Some() Frozen Lands",
@@ -16,7 +16,7 @@
   "lua": {
     "api": "src/main/resources/scripts/lua/api.lua",
     "events": "src/main/resources/scripts/lua/events.lua",
-    "usage": "local m = require('engine.terrain'); m.call('status', {})"
+    "usage": "local terrain = require('engine.terrain'); terrain.validate_placement({group='dead_trees', x=0, z=0, radius=1.5})"
   },
   "runtime": {
     "configs": {

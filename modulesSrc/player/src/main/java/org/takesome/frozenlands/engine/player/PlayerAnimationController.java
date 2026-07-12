@@ -2,6 +2,9 @@ package org.takesome.frozenlands.engine.player;
 
 import com.jme3.anim.AnimClip;
 import com.jme3.anim.AnimComposer;
+import com.jme3.anim.AnimLayer;
+import com.jme3.anim.tween.action.Action;
+import com.jme3.anim.tween.action.BlendableAction;
 import com.jme3.animation.AnimChannel;
 import com.jme3.animation.AnimControl;
 import com.jme3.animation.LoopMode;
@@ -20,14 +23,37 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.SplittableRandom;
 
 public final class PlayerAnimationController extends AbstractControl implements AutoCloseable {
     private static final float MOMENTARY_FALLBACK_SECONDS = 0.85f;
     private static final float MOMENTARY_RESTORE_PAD_SECONDS = 0.04f;
+    private static final float IDLE_VARIANT_MIN_SECONDS = 3.5f;
+    private static final float IDLE_VARIANT_MIN_FACTOR = 0.95f;
+    private static final float IDLE_VARIANT_FACTOR_RANGE = 0.25f;
+    private static final float IDLE_TRANSITION_SECONDS = 0.38f;
+    private static final float LOCOMOTION_TRANSITION_SECONDS = 0.16f;
+    private static final float MOMENTARY_TRANSITION_SECONDS = 0.08f;
+
+    /**
+     * Every entry below is captured human motion. Duplicates are intentional selection weights.
+     * Locomotion currently has one verified clip per state because the imported source contains
+     * idle actions only; synthetic speed/amplitude variants are deliberately not used.
+     */
+    private static final List<String> IDLE_VARIANTS = List.of(
+            "idle_offensive_mocap",
+            "idle",
+            "idle_warrior_mocap",
+            "idle_offensive_mocap",
+            "idle"
+    );
+    private static final List<String> WALK_VARIANTS = List.of("walk");
+    private static final List<String> RUN_VARIANTS = List.of("run");
 
     private final Player player;
     private final int playerRef;
     private final List<AutoCloseable> subscriptions = new ArrayList<>();
+    private final SplittableRandom animationRandom;
 
     private AnimComposer composer;
     private AnimControl legacyControl;
@@ -39,16 +65,20 @@ public final class PlayerAnimationController extends AbstractControl implements 
     private String currentClip;
     private String momentaryClip;
     private float momentaryRemainingSeconds;
+    private float stateVariantRemainingSeconds = Float.POSITIVE_INFINITY;
 
     public PlayerAnimationController(Player player) {
         this.player = player;
         this.playerRef = player.runtimeId();
+        long seed = (((long) playerRef) << 32) ^ System.nanoTime();
+        this.animationRandom = new SplittableRandom(seed);
     }
 
     @Override
     protected void controlUpdate(float tpf) {
         initializeIfRequired();
         updateMomentaryAnimation(tpf);
+        updateStateVariation(tpf);
     }
 
     private void initializeIfRequired() {
@@ -107,17 +137,51 @@ public final class PlayerAnimationController extends AbstractControl implements 
         if (!isOwnEvent(event)) {
             return;
         }
-        boolean played = playBestClip(action, aliasesFor(action), "event:" + action, false, true);
+        boolean played = playBestClip(
+                action,
+                aliasesFor(action),
+                "event:" + action,
+                false,
+                true,
+                MOMENTARY_TRANSITION_SECONDS
+        );
         if (!played || currentClip == null) {
             return;
         }
         momentaryClip = currentClip;
-        momentaryRemainingSeconds = clipLengthSeconds(currentClip, MOMENTARY_FALLBACK_SECONDS) + MOMENTARY_RESTORE_PAD_SECONDS;
+        momentaryRemainingSeconds = clipLengthSeconds(currentClip, MOMENTARY_FALLBACK_SECONDS)
+                + MOMENTARY_RESTORE_PAD_SECONDS;
     }
 
     private void applyState(String state, String reason) {
         currentState = state == null || state.isBlank() ? PlayerState.STANDING.name() : state;
-        playBestClip(currentState, aliasesFor(currentState), reason, true, false);
+        boolean played = playStateVariant(currentState, reason, false);
+        if (!played) {
+            played = playBestClip(
+                    currentState,
+                    aliasesFor(currentState),
+                    reason,
+                    true,
+                    false,
+                    transitionForState(currentState)
+            );
+        }
+        scheduleStateVariation(played);
+    }
+
+    private boolean playStateVariant(String state, String reason, boolean forceRestart) {
+        String clip = chooseAvailableVariant(variantsFor(state));
+        if (clip == null) {
+            return false;
+        }
+        return playClip(
+                state,
+                clip,
+                reason,
+                true,
+                forceRestart,
+                transitionForState(state)
+        );
     }
 
     private void updateMomentaryAnimation(float tpf) {
@@ -134,11 +198,50 @@ public final class PlayerAnimationController extends AbstractControl implements 
         applyState(currentState, "momentary-end:" + ended);
     }
 
+    private void updateStateVariation(float tpf) {
+        if (!ready || isMomentaryActive() || !isStandingState(currentState)) {
+            return;
+        }
+        stateVariantRemainingSeconds -= Math.max(0f, tpf);
+        if (stateVariantRemainingSeconds > 0f) {
+            return;
+        }
+        boolean played = playStateVariant(currentState, "idle-variation", true);
+        if (!played) {
+            played = playBestClip(
+                    currentState,
+                    aliasesFor(currentState),
+                    "idle-variation-fallback",
+                    true,
+                    true,
+                    IDLE_TRANSITION_SECONDS
+            );
+        }
+        scheduleStateVariation(played);
+    }
+
+    private void scheduleStateVariation(boolean animationAvailable) {
+        if (!animationAvailable || !isStandingState(currentState) || currentClip == null) {
+            stateVariantRemainingSeconds = Float.POSITIVE_INFINITY;
+            return;
+        }
+        float clipLength = clipLengthSeconds(currentClip, 5f);
+        float factor = IDLE_VARIANT_MIN_FACTOR + animationRandom.nextFloat() * IDLE_VARIANT_FACTOR_RANGE;
+        stateVariantRemainingSeconds = Math.max(IDLE_VARIANT_MIN_SECONDS, clipLength * factor);
+    }
+
     private boolean isMomentaryActive() {
         return momentaryClip != null && momentaryRemainingSeconds > 0f;
     }
 
-    private boolean playBestClip(String state, List<String> aliases, String reason, boolean loop, boolean forceRestart) {
+    private boolean playBestClip(
+            String state,
+            List<String> aliases,
+            String reason,
+            boolean loop,
+            boolean forceRestart,
+            float transitionSeconds
+    ) {
         if (availableClips.isEmpty()) {
             return false;
         }
@@ -146,11 +249,33 @@ public final class PlayerAnimationController extends AbstractControl implements 
         if (clip == null) {
             clip = availableClips.iterator().next();
         }
+        return playClip(state, clip, reason, loop, forceRestart, transitionSeconds);
+    }
+
+    private boolean playClip(
+            String state,
+            String clip,
+            String reason,
+            boolean loop,
+            boolean forceRestart,
+            float transitionSeconds
+    ) {
+        if (clip == null || !availableClips.contains(clip)) {
+            return false;
+        }
         if (clip.equals(currentClip) && !forceRestart) {
             return true;
         }
         if (composer != null) {
-            composer.setCurrentAction(clip);
+            Action action = composer.action(clip);
+            if (action instanceof BlendableAction blendableAction) {
+                blendableAction.setTransitionLength(Math.max(0f, transitionSeconds));
+            }
+            AnimLayer layer = composer.getLayer(AnimComposer.DEFAULT_LAYER);
+            if (layer != null) {
+                layer.setLooping(loop);
+            }
+            composer.setCurrentAction(clip, AnimComposer.DEFAULT_LAYER, true);
             composer.setTime(0.0d);
         } else if (legacyChannel != null) {
             legacyChannel.setAnim(clip);
@@ -162,12 +287,13 @@ public final class PlayerAnimationController extends AbstractControl implements 
         String previous = currentClip;
         currentClip = clip;
         player.getLogger().info(
-                "Player animation changed: {} -> {} state={} reason={} loop={} clips={}",
+                "Player animation changed: {} -> {} state={} reason={} loop={} transition={} clips={}",
                 previous,
                 currentClip,
                 state,
                 reason,
                 loop,
+                transitionSeconds,
                 availableClips
         );
         player.publishEvent(EngineEventTopics.PLAYER_ANIMATION_CHANGED, Map.of(
@@ -176,9 +302,57 @@ public final class PlayerAnimationController extends AbstractControl implements 
                 "to", currentClip,
                 "state", state,
                 "reason", reason,
-                "loop", loop
+                "loop", loop,
+                "transitionSeconds", transitionSeconds
         ));
         return true;
+    }
+
+    private float transitionForState(String state) {
+        return isStandingState(state) ? IDLE_TRANSITION_SECONDS : LOCOMOTION_TRANSITION_SECONDS;
+    }
+
+    private boolean isStandingState(String state) {
+        String normalized = normalize(state);
+        return normalized.equals("standing") || normalized.equals("idle");
+    }
+
+    private String chooseAvailableVariant(List<String> weightedCandidates) {
+        if (weightedCandidates == null || weightedCandidates.isEmpty()) {
+            return null;
+        }
+        ArrayList<String> available = new ArrayList<>();
+        for (String candidate : weightedCandidates) {
+            if (availableClips.contains(candidate)) {
+                available.add(candidate);
+            }
+        }
+        if (available.isEmpty()) {
+            return null;
+        }
+        if (available.size() > 1 && currentClip != null) {
+            ArrayList<String> alternatives = new ArrayList<>();
+            for (String candidate : available) {
+                if (!candidate.equals(currentClip)) {
+                    alternatives.add(candidate);
+                }
+            }
+            if (!alternatives.isEmpty()) {
+                available = alternatives;
+            }
+        }
+        return available.get(animationRandom.nextInt(available.size()));
+    }
+
+    private List<String> variantsFor(String stateOrAction) {
+        String key = stateOrAction == null ? "" : stateOrAction.toUpperCase(Locale.ROOT);
+        return switch (key) {
+            case "STANDING", "IDLE" -> IDLE_VARIANTS;
+            case "WALKING", "WALK" -> WALK_VARIANTS;
+            case "SPRINTING", "RUN", "RUNNING" -> RUN_VARIANTS;
+            case "FLYING", "AIR", "FALL", "FALLING" -> List.of("air");
+            default -> List.of();
+        };
     }
 
     private float clipLengthSeconds(String clip, float fallback) {
@@ -222,10 +396,19 @@ public final class PlayerAnimationController extends AbstractControl implements 
     private List<String> aliasesFor(String stateOrAction) {
         String key = stateOrAction == null ? "" : stateOrAction.toUpperCase(Locale.ROOT);
         return switch (key) {
-            case "STANDING", "IDLE" -> List.of("idle", "stand", "standing", "breathing", "A-pose", "TPose", "T-pose");
-            case "WALKING", "WALK" -> List.of("walk", "walking", "walk_forward", "idle");
-            case "SPRINTING", "RUN", "RUNNING" -> List.of("run", "running", "sprint", "sprinting", "walk");
-            case "FLYING", "AIR", "FALL", "FALLING" -> List.of("air", "flying", "fall", "falling", "jump", "idle");
+            case "STANDING", "IDLE" -> List.of(
+                    "idle_offensive_mocap", "idle_warrior_mocap", "idle",
+                    "stand", "standing", "breathing", "A-pose", "TPose", "T-pose"
+            );
+            case "WALKING", "WALK" -> List.of(
+                    "walk", "walking", "walk_forward", "idle"
+            );
+            case "SPRINTING", "RUN", "RUNNING" -> List.of(
+                    "run", "running", "sprint", "sprinting", "walk"
+            );
+            case "FLYING", "AIR", "FALL", "FALLING" -> List.of(
+                    "air", "flying", "fall", "falling", "jump", "idle"
+            );
             case "JUMP" -> List.of("jump", "air");
             case "ATTACK", "ATTACKING" -> List.of("attack", "shoot", "fire", "punch", "idle");
             default -> List.of(key, "idle");
@@ -248,7 +431,8 @@ public final class PlayerAnimationController extends AbstractControl implements 
 
     private boolean isGameplayClip(String clip) {
         String normalized = normalize(clip);
-        return !normalized.startsWith("headturn");
+        return !normalized.startsWith("headturn")
+                && !normalized.startsWith("face");
     }
 
     private void announceRuntime() {
@@ -259,8 +443,20 @@ public final class PlayerAnimationController extends AbstractControl implements 
         if (composer == null && legacyControl == null) {
             player.getLogger().warn("Player animation runtime not found for visual={}", player.getPlayerModel().getPlayerSpatial().getName());
         } else {
-            player.getLogger().info("Player animation runtime ready composer={} legacy={} clips={}", composer != null, legacyControl != null, availableClips);
+            player.getLogger().info(
+                    "Player animation runtime ready composer={} legacy={} clips={} variants={{idle={}, walk={}, run={}}}",
+                    composer != null,
+                    legacyControl != null,
+                    availableClips,
+                    availableVariantCount(IDLE_VARIANTS),
+                    availableVariantCount(WALK_VARIANTS),
+                    availableVariantCount(RUN_VARIANTS)
+            );
         }
+    }
+
+    private int availableVariantCount(List<String> weightedVariants) {
+        return (int) weightedVariants.stream().distinct().filter(availableClips::contains).count();
     }
 
     private AnimComposer findComposer(Spatial spatial) {
@@ -360,6 +556,7 @@ public final class PlayerAnimationController extends AbstractControl implements 
             currentClip = null;
             momentaryClip = null;
             momentaryRemainingSeconds = 0f;
+            stateVariantRemainingSeconds = Float.POSITIVE_INFINITY;
         }
         super.setSpatial(spatial);
     }

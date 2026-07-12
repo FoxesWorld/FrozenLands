@@ -1,6 +1,8 @@
 package org.takesome.frozenlands.engine.providers;
 
 import org.takesome.frozenlands.engine.EngineContext;
+import org.takesome.frozenlands.engine.events.EngineEventBus;
+import org.takesome.frozenlands.engine.runtime.EngineRuntimeOptions;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -10,7 +12,15 @@ import java.util.Optional;
 public final class ProviderRegistry {
     private final Map<String, Object> providersById = new LinkedHashMap<>();
     private final Map<Class<?>, Object> providersByType = new LinkedHashMap<>();
-    private final ProviderEventBus eventBus = new ProviderEventBus();
+    private final ProviderEventBus eventBus;
+
+    public ProviderRegistry() {
+        this(new EngineEventBus("provider", EngineRuntimeOptions.defaultOptions().eventHistoryLimit("provider")));
+    }
+
+    public ProviderRegistry(EngineEventBus eventBus) {
+        this.eventBus = new ProviderEventBus(eventBus);
+    }
 
     public <T> T register(String id, Class<T> type, T provider) {
         if (id == null || id.isBlank()) {

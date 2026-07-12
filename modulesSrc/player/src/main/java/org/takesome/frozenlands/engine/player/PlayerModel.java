@@ -225,7 +225,11 @@ public class PlayerModel extends Node {
     }
 
     public void setShadowMode(RenderQueue.ShadowMode shadowMode) {
-        playerSpatial.setShadowMode(shadowMode);
+        PlayerShadowPolicy.apply(playerSpatial, shadowMode);
+    }
+
+    public int countGeometriesWithShadowMode(RenderQueue.ShadowMode shadowMode) {
+        return PlayerShadowPolicy.count(playerSpatial, shadowMode);
     }
 
     public boolean setVisualVisible(boolean visible, Spatial.CullHint visibleCullHint) {

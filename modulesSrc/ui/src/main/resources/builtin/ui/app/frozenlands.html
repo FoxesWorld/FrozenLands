@@ -8,6 +8,7 @@
   <div id="ui-root" class="ui-root">
     <div id="main-menu-background" class="main-menu-background"></div>
     <div id="screen-overlay" class="screen-overlay"></div>
+
     <div id="screen-main-menu" class="screen main-menu" data-visible="true" style="display: block;">
       <div class="menu-card">
         <p class="kicker">TAKE SOME / FROZENLANDS</p>
@@ -17,9 +18,13 @@
         <p id="main-menu-status" class="status">Ready for expedition.</p>
 
         <form id="main-menu-form" class="menu-form" action="menu.main" command="navigation" title="Main menu navigation" data-form="main-menu">
-          <button id="btn-new-game" class="menu-button primary" data-event="ui.menu.newGame" data-action="game.new">New Expedition</button>
-          <button id="btn-continue" class="menu-button" data-event="ui.menu.continue" data-action="game.continue">Continue</button>
+          <button id="btn-new-game" class="menu-button primary" data-event="ui.menu.newGame" data-action="game.new" data-operation="runtime.game.start">New Expedition</button>
+          <button id="btn-continue" class="menu-button" data-event="ui.menu.continue" data-action="game.continue" data-operation="runtime.game.start">Continue</button>
           <button id="btn-refresh-saves" class="menu-button" data-event="ui.menu.refreshSaves" data-action="game.refreshSaves">Refresh Saves</button>
+          <button id="btn-settings-main" class="menu-button menu-button-iconic" data-event="ui.menu.settings" data-action="ui.settings" title="Open settings">
+            <i class="fa-solid fa-gear menu-button-icon"></i>
+            <span class="menu-button-label">Settings</span>
+          </button>
           <button id="btn-exit" class="menu-button danger" data-event="ui.menu.exitToDesktop" data-action="game.exitToDesktop">Exit</button>
 
           <div class="save-box" aria-label="Save slots">
@@ -58,6 +63,10 @@
         <form id="pause-menu-form" class="menu-form" action="menu.pause" command="navigation" title="Pause menu navigation" data-form="pause-menu">
           <button id="btn-resume" class="menu-button primary" data-event="ui.menu.resume" data-action="game.resume">Resume</button>
           <button id="btn-save" class="menu-button" data-event="ui.menu.save" data-action="game.save">Save</button>
+          <button id="btn-settings-pause" class="menu-button menu-button-iconic" data-event="ui.menu.settings" data-action="ui.settings" title="Open settings">
+            <i class="fa-solid fa-gear menu-button-icon"></i>
+            <span class="menu-button-label">Settings</span>
+          </button>
           <button id="btn-main-menu" class="menu-button" data-event="ui.menu.mainMenu" data-action="ui.mainMenu">Main Menu</button>
           <button id="btn-pause-exit" class="menu-button danger" data-event="ui.menu.exitToDesktop" data-action="game.exitToDesktop">Exit</button>
 
@@ -72,6 +81,115 @@
               </div>
             </div>
           </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="screen-settings" class="screen settings settings-from-main" data-visible="false" style="display: none;">
+      <div id="settings-card" class="menu-card settings-card">
+        <p class="kicker settings-kicker">
+          <i class="fa-solid fa-gear settings-kicker-icon"></i>
+          <span class="settings-kicker-label">SYSTEM CONFIGURATION</span>
+        </p>
+        <p id="settings-title" class="title">Settings</p>
+        <p id="settings-subtitle" class="subtitle">Configure graphics, audio and controls.</p>
+        <div class="menu-separator"></div>
+        <p id="settings-status" class="status">Select a category.</p>
+
+        <div id="settings-panel-overview" class="settings-panel settings-panel-overview" data-visible="true" style="display: block;">
+          <button id="btn-settings-graphics" class="settings-category-button" data-event="ui.menu.settings.category" data-category="graphics" title="Open graphics settings">
+            <i class="fa-solid fa-desktop settings-category-icon"></i>
+            <span class="settings-category-title">Graphics</span>
+            <span class="settings-category-description">Quality presets and post-processing</span>
+            <i class="fa-solid fa-chevron-right settings-category-arrow"></i>
+          </button>
+          <button id="btn-settings-audio" class="settings-category-button" data-event="ui.menu.settings.category" data-category="audio" title="Open audio settings">
+            <i class="fa-solid fa-volume-high settings-category-icon"></i>
+            <span class="settings-category-title">Audio</span>
+            <span class="settings-category-description">Master volume and sound output</span>
+            <i class="fa-solid fa-chevron-right settings-category-arrow"></i>
+          </button>
+          <button id="btn-settings-controls" class="settings-category-button" data-event="ui.menu.settings.category" data-category="controls" title="Open control settings">
+            <i class="fa-solid fa-keyboard settings-category-icon"></i>
+            <span class="settings-category-title">Controls</span>
+            <span class="settings-category-description">Key bindings and mouse sensitivity</span>
+            <i class="fa-solid fa-chevron-right settings-category-arrow"></i>
+          </button>
+        </div>
+
+        <div id="settings-panel-graphics" class="settings-panel settings-detail-panel" data-visible="false" style="display: none;">
+          <div class="settings-detail-heading">
+            <i class="fa-solid fa-desktop settings-detail-icon"></i>
+            <span class="settings-detail-title">Graphics Quality</span>
+          </div>
+          <p class="settings-detail-copy">Choose a runtime quality preset.</p>
+          <div class="settings-option-grid">
+            <button id="btn-graphics-low" class="settings-option-button" data-event="ui.menu.settings.graphicsPreset" data-preset="LOW">Low</button>
+            <button id="btn-graphics-medium" class="settings-option-button" data-event="ui.menu.settings.graphicsPreset" data-preset="MEDIUM">Medium</button>
+            <button id="btn-graphics-high" class="settings-option-button selected" data-event="ui.menu.settings.graphicsPreset" data-preset="HIGH">High</button>
+            <button id="btn-graphics-ultra" class="settings-option-button" data-event="ui.menu.settings.graphicsPreset" data-preset="ULTRA">Ultra</button>
+          </div>
+          <button id="btn-settings-graphics-categories" class="settings-inline-back" data-event="ui.menu.settings.overview" title="Back to settings categories">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Categories</span>
+          </button>
+        </div>
+
+        <div id="settings-panel-audio" class="settings-panel settings-detail-panel" data-visible="false" style="display: none;">
+          <div class="settings-detail-heading">
+            <i class="fa-solid fa-volume-high settings-detail-icon"></i>
+            <span class="settings-detail-title">Master Volume</span>
+          </div>
+          <p class="settings-detail-copy">Set the global listener volume.</p>
+          <div class="settings-slider-card settings-volume-card">
+            <div class="settings-slider-heading">
+              <span class="settings-slider-label">Master volume</span>
+              <span id="settings-volume-value" class="settings-slider-value">100%</span>
+            </div>
+            <input id="settings-volume-range" class="settings-range" type="range" min="0" max="1" step="0.01" value="1" data-range-event="true" data-event="ui.menu.settings.audioVolume" data-setting="volume" title="Master volume">
+            <div class="settings-range-scale">
+              <span class="settings-range-min">Mute</span>
+              <span class="settings-range-max">Full</span>
+            </div>
+          </div>
+          <button id="btn-settings-audio-categories" class="settings-inline-back" data-event="ui.menu.settings.overview" title="Back to settings categories">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Categories</span>
+          </button>
+        </div>
+
+        <div id="settings-panel-controls" class="settings-panel settings-detail-panel" data-visible="false" style="display: none;">
+          <div class="settings-detail-heading">
+            <i class="fa-solid fa-keyboard settings-detail-icon"></i>
+            <span class="settings-detail-title">Controls</span>
+          </div>
+          <div class="settings-key-list">
+            <div class="settings-key-row"><span class="settings-key-action">Move</span><span class="settings-key-value">W A S D</span></div>
+            <div class="settings-key-row"><span class="settings-key-action">Pause</span><span class="settings-key-value">ESC / F10</span></div>
+            <div class="settings-key-row"><span class="settings-key-action">Camera</span><span class="settings-key-value">Mouse</span></div>
+          </div>
+          <div class="settings-slider-card settings-sensitivity-card">
+            <div class="settings-slider-heading">
+              <span class="settings-slider-label">Mouse sensitivity</span>
+              <span id="settings-sensitivity-value" class="settings-slider-value">1.00x</span>
+            </div>
+            <input id="settings-sensitivity-range" class="settings-range" type="range" min="0.2" max="3" step="0.05" value="1" data-range-event="true" data-event="ui.menu.settings.mouseSensitivity" data-setting="sensitivity" title="Mouse sensitivity">
+            <div class="settings-range-scale">
+              <span class="settings-range-min">Precise</span>
+              <span class="settings-range-max">Fast</span>
+            </div>
+          </div>
+          <button id="btn-settings-controls-categories" class="settings-inline-back" data-event="ui.menu.settings.overview" title="Back to settings categories">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Categories</span>
+          </button>
+        </div>
+
+        <form id="settings-menu-form" class="menu-form settings-menu-form" action="menu.settings" command="navigation" title="Settings navigation" data-form="settings-menu">
+          <button id="btn-settings-back" class="menu-button menu-button-iconic settings-exit-button" data-event="ui.menu.settingsBack" data-action="ui.settingsBack" title="Return to the previous menu">
+            <i class="fa-solid fa-arrow-left menu-button-icon"></i>
+            <span class="menu-button-label">Back</span>
+          </button>
         </form>
       </div>
     </div>

@@ -5,20 +5,40 @@
   },
   "lightScattering": {
     "density": 0.5,
-    "x": 1477.1023,
-    "y": 381.164,
-    "z": -1769.0748
+    "distance": 10000.0
   },
   "dof": {
     "focusDistance": 0,
     "focusRange": 100
   },
   "shadows": {
+    "preset": "balanced",
+    "mode": "pcss-single-csm",
+    "filtering": "pcss",
     "shadowMapSize": 2048,
     "splits": 3,
     "shadowZExtend": 180.0,
+    "shadowZFadeLength": 24.0,
     "shadowIntensity": 0.45,
-    "edgesThickness": 3
+    "edgesThickness": 3,
+    "pathSamples": 4,
+    "sunAngularRadiusDegrees": 0.27,
+    "pcssAngularRadiusDegrees": 0.27,
+    "sampleRotationDegrees": 0.0,
+    "lambda": 0.65,
+    "stabilization": true,
+    "hardwareCompare": false,
+    "renderBackFacesShadows": false,
+    "edgeFiltering": "PCFPOISSON",
+    "pcssBlockerSearchRadius": 12.0,
+    "pcssBlockerSearchWorldRadius": 1.5,
+    "pcssMinFilterRadius": 1.25,
+    "pcssMaxFilterRadius": 16.0,
+    "pcssBlockerSamples": 8,
+    "pcssFilterSamples": 12,
+    "pcssDepthBias": 0.0005,
+    "pcssDepthBiasWorld": 0.03,
+    "pcssPenumbraScale": 1.0
   },
   "pipeline": {
     "enabled": true

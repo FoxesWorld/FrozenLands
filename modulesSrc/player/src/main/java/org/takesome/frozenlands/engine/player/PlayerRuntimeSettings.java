@@ -3,6 +3,7 @@ package org.takesome.frozenlands.engine.player;
 import org.takesome.frozenlands.engine.lua.LuaRuntimeConfig;
 import org.takesome.frozenlands.engine.runtime.RuntimeMaps;
 
+import java.util.List;
 import java.util.Map;
 
 public final class PlayerRuntimeSettings {
@@ -23,6 +24,7 @@ public final class PlayerRuntimeSettings {
     private final Map<String, Object> tool = loader.map(config, "tool");
     private final Map<String, Object> manager = loader.map(config, "manager");
     private final Map<String, Object> hud = loader.map(config, "hud");
+    private final Map<String, Object> fpsVisual = loader.map(config, "fpsVisual");
 
     public float walkSpeed() { return loader.floating(movement, "walkSpeed", 4.0f); }
     public float runSpeed() { return loader.floating(movement, "runSpeed", 8.0f); }
@@ -31,8 +33,16 @@ public final class PlayerRuntimeSettings {
     public float jumpDamping() { return loader.floating(physics, "jumpDamping", 0.0f); }
     public float characterHeight() { return loader.floating(physics, "characterHeight", 2.0f); }
     public float walkingRotationMultiplier() { return loader.floating(look, "walkingRotationMultiplier", 0.04f); }
+    public float lookRotationMultiplier() { return loader.floating(look, "rotationMultiplier", walkingRotationMultiplier()); }
     public float runningRotationMultiplier() { return loader.floating(look, "runningRotationMultiplier", 0.1f); }
     public boolean hudEnabled() { return bool(hud, "enabled", true); }
+
+    public boolean fpsHideCameraHead() { return bool(fpsVisual, "hideCamera" + "Head", true); }
+    public List<String> fpsHiddenNameTokens() {
+        List<String> configured = RuntimeMaps.stringList(fpsVisual.get("hiddenName" + "Tokens"));
+        return configured.isEmpty() ? List.of("head", "hair", "eye", "eyelash") : configured;
+    }
+
 
     public boolean managerPublishesState() { return bool(manager, "publishState", true); }
     public float managerTelemetryInterval() { return loader.floating(manager, "telemetryInterval", 0.25f); }

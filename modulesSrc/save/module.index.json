@@ -4,7 +4,7 @@
   "modulePath": "modulesSrc/save",
   "id": "engine.save",
   "type": "runtime",
-  "description": "Save runtime module: snapshot, save, load and list.",
+  "description": "Save runtime module: snapshot, save, overwrite, delete, load and list.",
   "project": {
     "id": "takesome.frozenlands",
     "name": "Take Some() Frozen Lands",
@@ -16,7 +16,7 @@
   "lua": {
     "api": "src/main/resources/scripts/lua/api.lua",
     "events": "src/main/resources/scripts/lua/events.lua",
-    "usage": "local m = require('engine.save'); m.call('status', {})"
+    "usage": "local m = require('engine.save'); m.call('list', {})"
   },
   "runtime": {
     "configs": {},

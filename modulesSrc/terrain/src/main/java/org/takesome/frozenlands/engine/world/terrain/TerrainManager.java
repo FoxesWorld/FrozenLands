@@ -4,20 +4,20 @@ import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import org.takesome.frozenlands.engine.EngineContext;
-import org.takesome.frozenlands.engine.config.Constants;
 import org.takesome.frozenlands.engine.runtime.RuntimeMaps;
 import org.takesome.frozenlands.engine.terrain.TerrainService;
 import org.takesome.frozenlands.engine.terrain.module.TerrainServiceFactory;
 import org.takesome.frozenlands.engine.world.terrain.chunk.TerrainChunkTracker;
 import org.takesome.frozenlands.engine.world.terrain.gen.GenAdaptor;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 public class TerrainManager {
+    private static final float SPAWN_COLLISION_INSET = 1.0f;
+
     private final TerrainChunkTracker chunkTracker = new TerrainChunkTracker();
     private final TerrainRuntimeSettings settings = new TerrainRuntimeSettings();
     private final GenAdaptor terrainBuilder;
@@ -26,7 +26,8 @@ public class TerrainManager {
     private TerrainQuad mountains;
 
     public TerrainManager(EngineContext app) {
-        this.terrainService = app.findService(TerrainService.class).orElseGet(() -> TerrainServiceFactory.create(app));
+        this.terrainService = app.findService(TerrainService.class)
+                .orElseGet(() -> TerrainServiceFactory.create(app));
         this.terrainBuilder = new GenAdaptor(app, chunkTracker);
         generateTerrain();
     }
@@ -67,13 +68,25 @@ public class TerrainManager {
         return chunkTracker.hasCollisionReadyChunks();
     }
 
+    public boolean isTerrainCollisionReadyAt(float x, float z) {
+        return chunkTracker.hasCollisionReadyAt(
+                x,
+                z,
+                SPAWN_COLLISION_INSET
+        );
+    }
+
     public Optional<Float> getWalkableHeightAt(float x, float z) {
         Optional<Float> visualHeight = getHeightAt(x, z);
         if (visualHeight.isPresent()) {
             return visualHeight;
         }
         try {
-            return Optional.of(terrainService.walkableHeightAt(TerrainService.DEFAULT_SEED, x, z));
+            return Optional.of(terrainService.walkableHeightAt(
+                    TerrainService.DEFAULT_SEED,
+                    x,
+                    z
+            ));
         } catch (RuntimeException ignored) {
             return Optional.empty();
         }
@@ -81,14 +94,40 @@ public class TerrainManager {
 
     public Optional<Map<String, Object>> sampleGameplayTerrain(float x, float z) {
         try {
-            return Optional.of(terrainService.sample(TerrainService.DEFAULT_SEED, x, z).toMap());
+            return Optional.of(terrainService.sample(
+                    TerrainService.DEFAULT_SEED,
+                    x,
+                    z
+            ).toMap());
         } catch (RuntimeException ignored) {
             return Optional.empty();
         }
     }
 
-    public Optional<Vector3f> findSafeSpawnLocation(float x, float z, float clearance) {
-        return getWalkableHeightAt(x, z).map(height -> new Vector3f(x, height + clearance, z));
+    public Optional<Vector3f> findSafeSpawnLocation(
+            float x,
+            float z,
+            float clearance
+    ) {
+        return getWalkableHeightAt(x, z)
+                .map(height -> new Vector3f(x, height + clearance, z));
+    }
+
+    public Optional<Vector3f> findCollisionSafeSpawnLocation(
+            float x,
+            float z,
+            float clearance
+    ) {
+        return chunkTracker.resolveCollisionReadyPoint(
+                x,
+                z,
+                SPAWN_COLLISION_INSET
+        ).flatMap(point -> getHeightAt(point.x, point.y)
+                .map(height -> new Vector3f(
+                        point.x,
+                        height + clearance,
+                        point.y
+                )));
     }
 
     public Map<String, Object> settingsSnapshot() {
@@ -96,72 +135,83 @@ public class TerrainManager {
     }
 
     public List<Map<String, Object>> placementGroups() {
-        return settings.placementGroups().stream().map(TerrainPlacementGroup::toMap).toList();
+        return settings.placementGroups().stream()
+                .map(TerrainPlacementGroup::toMap)
+                .toList();
     }
 
     public Map<String, Object> validatePlacement(Map<String, Object> args) {
         List<TerrainPlacementGroup> groups = settings.placementGroups();
-        TerrainPlacementGroup group = selectGroup(groups, RuntimeMaps.string(args, "group", RuntimeMaps.string(args, "groupId", "")));
+        TerrainPlacementGroup group = selectGroup(
+                groups,
+                RuntimeMaps.string(
+                        args,
+                        "group",
+                        RuntimeMaps.string(args, "groupId", "")
+                )
+        );
         float x = RuntimeMaps.floating(args, "x", 0f);
         float z = RuntimeMaps.floating(args, "z", 0f);
-        float radius = RuntimeMaps.floating(args, "radius", Math.max(0.5f, group.footprintPadding() + group.edgePadding()));
-        float sampleRadius = Math.max(0.1f, radius + group.footprintPadding());
-        float diagonal = sampleRadius * 0.70710677f;
-        float[][] offsets = {
-                {0f, 0f},
-                {sampleRadius, 0f}, {-sampleRadius, 0f}, {0f, sampleRadius}, {0f, -sampleRadius},
-                {diagonal, diagonal}, {-diagonal, diagonal}, {diagonal, -diagonal}, {-diagonal, -diagonal}
-        };
+        float radius = RuntimeMaps.floating(
+                args,
+                "radius",
+                Math.max(
+                        0.5f,
+                        group.footprintPadding() + group.edgePadding()
+                )
+        );
+        TerrainPlacementCongruenceEvaluator.Assessment assessment
+                = TerrainPlacementCongruenceEvaluator.evaluate(
+                        x,
+                        z,
+                        Math.max(0.1f, radius),
+                        group,
+                        this::getWalkableHeightAt
+                );
 
-        List<Map<String, Object>> samples = new ArrayList<>(offsets.length);
-        float minY = Float.POSITIVE_INFINITY;
-        float maxY = Float.NEGATIVE_INFINITY;
-        boolean allResolved = true;
-        boolean aboveWater = true;
-        for (float[] offset : offsets) {
-            float sx = x + offset[0];
-            float sz = z + offset[1];
-            Optional<Float> height = getWalkableHeightAt(sx, sz);
-            Map<String, Object> sample = new LinkedHashMap<>();
-            sample.put("x", sx);
-            sample.put("z", sz);
-            sample.put("resolved", height.isPresent());
-            if (height.isPresent()) {
-                float y = height.get();
-                sample.put("height", y);
-                minY = Math.min(minY, y);
-                maxY = Math.max(maxY, y);
-                if (y <= Constants.WATER_LEVEL_HEIGHT) {
-                    aboveWater = false;
-                }
-            } else {
-                allResolved = false;
-            }
-            samples.add(sample);
-        }
-
-        float delta = allResolved ? maxY - minY : Float.POSITIVE_INFINITY;
-        boolean valid = allResolved && aboveWater && delta <= group.maxSurfaceDelta();
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("ok", true);
-        result.put("valid", valid);
+        result.put("valid", assessment.congruent());
         result.put("group", group.id());
         result.put("kind", group.kind());
         result.put("x", x);
         result.put("z", z);
         result.put("radius", radius);
-        result.put("sampleRadius", sampleRadius);
         result.put("maxSurfaceDelta", group.maxSurfaceDelta());
-        result.put("surfaceDelta", allResolved ? delta : null);
-        result.put("aboveWater", aboveWater);
-        result.put("samples", samples);
-        if (!valid) {
-            result.put("reason", !allResolved ? "terrain-height-missing" : !aboveWater ? "below-or-at-water-level" : "surface-delta-too-high");
+        result.put("congruenceProfile", group.congruence().toMap());
+        result.put("assessment", assessment.toMap());
+        result.put("recommendedTransform", Map.of(
+                "x", x,
+                "y", assessment.resolved()
+                        ? assessment.recommendedGroundY()
+                        : 0f,
+                "z", z,
+                "surfaceNormal", vectorMap(assessment.surfaceNormal())
+        ));
+        if (!assessment.congruent()) {
+            result.put(
+                    "reason",
+                    assessment.reasons().isEmpty()
+                            ? "placement-not-congruent"
+                            : assessment.reasons().get(0)
+            );
+            result.put("reasons", assessment.reasons());
         }
         return result;
     }
 
-    private TerrainPlacementGroup selectGroup(List<TerrainPlacementGroup> groups, String groupId) {
+    private Map<String, Object> vectorMap(Vector3f vector) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("x", vector.x);
+        result.put("y", vector.y);
+        result.put("z", vector.z);
+        return result;
+    }
+
+    private TerrainPlacementGroup selectGroup(
+            List<TerrainPlacementGroup> groups,
+            String groupId
+    ) {
         if (groupId != null && !groupId.isBlank()) {
             for (TerrainPlacementGroup group : groups) {
                 if (group.id().equals(groupId)) {
@@ -169,7 +219,9 @@ public class TerrainManager {
                 }
             }
         }
-        return groups.isEmpty() ? new TerrainRuntimeSettings().placementGroups().get(0) : groups.get(0);
+        return groups.isEmpty()
+                ? new TerrainRuntimeSettings().placementGroups().get(0)
+                : groups.get(0);
     }
 
     public Map<String, Object> status() {

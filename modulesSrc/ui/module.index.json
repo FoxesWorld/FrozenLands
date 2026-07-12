@@ -4,7 +4,7 @@
   "modulePath": "modulesSrc/ui",
   "id": "frozenlands.ui",
   "type": "runtime",
-  "description": "Unified HtmlDom UI provider for FrozenLands runtime screens, HUD, menu and save-list bridge.",
+  "description": "Unified HtmlDom UI provider for FrozenLands runtime screens, HUD, main and pause menus, settings navigation and save-list bridge.",
   "project": {
     "id": "takesome.frozenlands",
     "name": "Take Some() Frozen Lands",
@@ -25,7 +25,7 @@
   "lua": {
     "api": "src/main/resources/scripts/lua/api.lua",
     "events": "src/main/resources/scripts/lua/events.lua",
-    "usage": "local ui = require('frozenlands.ui'); ui.call('status', {})",
+    "usage": "local ui = require('frozenlands.ui'); ui.open_settings('main-menu')",
     "handlers": [
       {
         "topic": "ui.menu.*",

@@ -6,9 +6,11 @@ import dev.takesome.htmldom.desktop.HtmlDomEventDispatcher;
 import dev.takesome.htmldom.desktop.HtmlDomSwingPanel;
 import dev.takesome.htmldom.dom.UiDomDocument;
 import dev.takesome.htmldom.dom.UiDomElement;
+import dev.takesome.htmldom.dom.UiDomNode;
 import dev.takesome.htmldom.scripting.lua.HtmlDomLuaRuntime;
 import org.takesome.frozenlands.engine.EngineContext;
 import org.takesome.frozenlands.engine.events.EngineEventTopics;
+import org.takesome.frozenlands.engine.operations.EngineOperationCoordinator;
 import org.takesome.frozenlands.engine.shutdown.RuntimeShutdown;
 
 import java.awt.AlphaComposite;
@@ -30,11 +32,13 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 public final class FrozenLandsHtmlUiRuntime {
     public static final String DEFAULT_UI_ROOT = "assets/ui";
@@ -58,11 +62,15 @@ public final class FrozenLandsHtmlUiRuntime {
     private final String html;
     private final String css;
     private final List<String> loadedScripts;
+    private final List<AutoCloseable> eventSubscriptions = new ArrayList<>();
+    private final Set<String> busyOperations = new LinkedHashSet<>();
 
     private String lastClickFingerprint = "";
     private long lastClickFingerprintAtNanos;
     private int viewportWidth = -1;
     private int viewportHeight = -1;
+    private String settingsReturnScreen = "main-menu";
+    private String settingsSection = "overview";
 
     private FrozenLandsHtmlUiRuntime(
             EngineContext context,
@@ -110,9 +118,10 @@ public final class FrozenLandsHtmlUiRuntime {
         List<String> loadedScripts = executeBuiltInScripts(manifest.getScripts(), luaRuntime);
         FrozenLandsHtmlUiRuntime runtime = new FrozenLandsHtmlUiRuntime(context, Path.of(BUILTIN_UI_ROOT), manifest, panel, luaRuntime, html, css, loadedScripts);
         runtime.installDefaultEventBridge();
+        runtime.installOperationEventBridge();
         runtime.setScreen(manifest.getStartupScreen());
         runtime.refreshSaveSlots();
-        runtime.applyGameplayGate("main-menu".equals(runtime.screen()) || "pause".equals(runtime.screen()), "html-ui-startup");
+        runtime.applyGameplayGate(runtime.isMenuScreen(runtime.screen()), "html-ui-startup");
         return runtime;
     }
 
@@ -137,9 +146,10 @@ public final class FrozenLandsHtmlUiRuntime {
         List<String> loadedScripts = executeScripts(uiRoot, manifest.getScripts(), luaRuntime);
         FrozenLandsHtmlUiRuntime runtime = new FrozenLandsHtmlUiRuntime(context, uiRoot, manifest, panel, luaRuntime, html, css, loadedScripts);
         runtime.installDefaultEventBridge();
+        runtime.installOperationEventBridge();
         runtime.setScreen(manifest.getStartupScreen());
         runtime.refreshSaveSlots();
-        runtime.applyGameplayGate("main-menu".equals(runtime.screen()) || "pause".equals(runtime.screen()), "html-ui-startup");
+        runtime.applyGameplayGate(runtime.isMenuScreen(runtime.screen()), "html-ui-startup");
         return runtime;
     }
 
@@ -284,19 +294,209 @@ public final class FrozenLandsHtmlUiRuntime {
     private void installDefaultEventBridge() {
         try {
             panel.addEventListener("[data-action]", "click", this::handleClick);
+            for (UiDomElement input : document().getElementsByTagName("input")) {
+                if (dataBoolean(input, "range-event", false)) {
+                    panel.addEventListener(
+                            input,
+                            "input",
+                            this::handleRangeInput
+                    );
+                }
+            }
         } catch (RuntimeException exception) {
-            context.getLogger().warn("Html UI click bridge was not installed: {}", exception.toString());
+            context.getLogger().warn(
+                    "Html UI event bridge was not installed: {}",
+                    exception.toString()
+            );
+        }
+    }
+
+    private void installOperationEventBridge() {
+        eventSubscriptions.add(context.getModuleRegistry().getEventBus().subscribe(
+                "engine.operation.*",
+                this::onOperationEvent,
+                false
+        ));
+        context.findService(EngineOperationCoordinator.class).ifPresent(coordinator -> {
+            for (Map<String, Object> snapshot : coordinator.activeSnapshots()) {
+                setOperationBusy(
+                        safeString(snapshot.get("operation")),
+                        true,
+                        safeString(snapshot.get("operationId")),
+                        safeString(snapshot.get("state"))
+                );
+            }
+        });
+    }
+
+    private void onOperationEvent(Map<String, Object> event) {
+        String topic = safeString(event == null ? null : event.get("topic"));
+        Map<String, Object> payload = eventPayload(event);
+        String operation = safeString(payload.get("operation"));
+        if (operation.isBlank()) {
+            return;
+        }
+
+        boolean busy = EngineEventTopics.ENGINE_OPERATION_STARTED.equals(topic)
+                || EngineEventTopics.ENGINE_OPERATION_PROGRESS.equals(topic)
+                || (EngineEventTopics.ENGINE_OPERATION_REJECTED.equals(topic)
+                && booleanValue(payload.get("busy"), false));
+        boolean terminal = EngineEventTopics.ENGINE_OPERATION_COMPLETED.equals(topic)
+                || EngineEventTopics.ENGINE_OPERATION_FAILED.equals(topic)
+                || EngineEventTopics.ENGINE_OPERATION_CANCELLED.equals(topic);
+
+        if (busy) {
+            setOperationBusy(operation, true, safeString(payload.get("operationId")), safeString(payload.get("state")));
+        } else if (terminal) {
+            setOperationBusy(operation, false, safeString(payload.get("operationId")), safeString(payload.get("state")));
+        }
+
+        if (EngineEventTopics.ENGINE_OPERATION_REJECTED.equals(topic)) {
+            context.getLogger().info(
+                    "Html UI operation request rejected operation={} operationId={} reason={}",
+                    operation,
+                    payload.get("operationId"),
+                    payload.get("reason")
+            );
+        }
+    }
+
+    private void setOperationBusy(String operation, boolean busy, String operationId, String state) {
+        synchronized (busyOperations) {
+            if (busy) {
+                busyOperations.add(operation);
+            } else {
+                busyOperations.remove(operation);
+            }
+        }
+        applyOperationState(document().documentElement(), operation, busy, operationId, state);
+        panel.invalidateLayout();
+        panel.repaintHost();
+    }
+
+    private void applyOperationState(
+            UiDomNode node,
+            String operation,
+            boolean busy,
+            String operationId,
+            String state
+    ) {
+        if (node instanceof UiDomElement element && operation.equals(element.data("operation", ""))) {
+            if (busy) {
+                if (!element.hasAttribute("disabled")) {
+                    element.setAttribute("disabled", "disabled");
+                    element.setAttribute("data-operation-disabled-owned", "true");
+                }
+                element.setAttribute("data-operation-state", state == null || state.isBlank() ? "running" : state);
+                element.setAttribute("data-operation-id", operationId == null ? "" : operationId);
+                element.classList().add("operation-busy");
+            } else {
+                if ("true".equals(element.data("operation-disabled-owned", ""))) {
+                    element.removeAttribute("disabled");
+                }
+                element.removeAttribute("data-operation-disabled-owned");
+                element.removeAttribute("data-operation-state");
+                element.removeAttribute("data-operation-id");
+                element.classList().remove("operation-busy");
+            }
+        }
+        for (UiDomNode child : node.children()) {
+            applyOperationState(child, operation, busy, operationId, state);
+        }
+    }
+
+    private boolean operationBusy(String operation) {
+        if (operation == null || operation.isBlank()) {
+            return false;
+        }
+        synchronized (busyOperations) {
+            return busyOperations.contains(operation);
+        }
+    }
+
+    private void reapplyBusyOperations() {
+        List<String> operations;
+        synchronized (busyOperations) {
+            operations = List.copyOf(busyOperations);
+        }
+        for (String operation : operations) {
+            applyOperationState(document().documentElement(), operation, true, "", "running");
         }
     }
 
     private void handleClick(HtmlDomEventDispatcher.DomEvent event) {
-        UiDomElement target = event.currentTarget() == null ? event.target() : event.currentTarget();
+        UiDomElement target = event.currentTarget() == null
+                ? event.target()
+                : event.currentTarget();
         if (target == null) {
             return;
         }
         if (executeUiClick(target, "html-dom-click")) {
             event.preventDefault();
         }
+    }
+
+    private void handleRangeInput(HtmlDomEventDispatcher.DomEvent event) {
+        UiDomElement target = event.currentTarget() == null
+                ? event.target()
+                : event.currentTarget();
+        if (target == null) {
+            return;
+        }
+        if (executeUiValueEvent(target, "html-dom-range-input")) {
+            event.preventDefault();
+        }
+    }
+
+    private boolean executeUiValueEvent(
+            UiDomElement target,
+            String origin
+    ) {
+        Map<String, Object> payload = buildUiEventPayload(target);
+        String topic = safeString(payload.get("event"));
+        String elementId = safeString(payload.get("elementId"));
+        if (topic.isBlank()) {
+            context.getLogger().warn(
+                    "Html UI range has no data-event: elementId={}",
+                    elementId
+            );
+            return false;
+        }
+        if (target.hasAttribute("disabled")) {
+            return rejectUiAction(payload, origin, "element-disabled");
+        }
+
+        publishUiLifecycle(
+                EngineEventTopics.UI_ACTION_REQUESTED,
+                payload,
+                origin,
+                "input"
+        );
+        payload.put("consumed", true);
+        payload.put("origin", origin);
+        Map<String, Object> published = publishUiEvent(topic, payload, origin);
+        Map<String, Object> dispatched = new LinkedHashMap<>(payload);
+        dispatched.put("eventId", published.get("eventId"));
+        dispatched.put("delivered", published.get("delivered"));
+        dispatched.put("listenerFailures", published.get("listenerFailures"));
+        publishUiLifecycle(
+                EngineEventTopics.UI_ACTION_DISPATCHED,
+                dispatched,
+                origin,
+                "input-dispatched"
+        );
+        context.getLogger().debug(
+                "Html UI range event topic={} elementId={} value={} "
+                        + "volume={} sensitivity={} delivered={}",
+                topic,
+                elementId,
+                payload.get("value"),
+                payload.get("volume"),
+                payload.get("sensitivity"),
+                published.get("delivered")
+        );
+        panel.repaintHost();
+        return true;
     }
 
     public boolean emitPointerClick(UiDomElement target, String origin) {
@@ -307,14 +507,22 @@ public final class FrozenLandsHtmlUiRuntime {
         Map<String, Object> payload = buildUiEventPayload(target);
         String topic = safeString(payload.get("event"));
         String elementId = safeString(payload.get("elementId"));
+        String operation = safeString(payload.get("operation"));
         if (topic.isBlank()) {
             context.getLogger().warn("Html UI element has no data-event/action mapping: elementId={} action={}", elementId, payload.get("action"));
             return false;
         }
 
+        publishUiLifecycle(EngineEventTopics.UI_ACTION_REQUESTED, payload, origin, "requested");
+        if (target.hasAttribute("disabled")) {
+            return rejectUiAction(payload, origin, "element-disabled");
+        }
+        if (operationBusy(operation)) {
+            return rejectUiAction(payload, origin, "operation-already-running");
+        }
         if (duplicateClick(payload)) {
             context.getLogger().debug("Html UI duplicate click suppressed topic={} elementId={} origin={}", topic, elementId, origin);
-            return true;
+            return rejectUiAction(payload, origin, "duplicate-click-window");
         }
 
         boolean luaConsumed = false;
@@ -329,15 +537,29 @@ public final class FrozenLandsHtmlUiRuntime {
         payload.put("consumed", consumed);
         payload.put("origin", origin);
 
-        context.getLogger().info("Html UI event emitted topic={} elementId={} screen={} action={} slot={} origin={}",
+        context.getLogger().info(
+                "Html UI event emitted topic={} elementId={} screen={} action={} "
+                        + "operation={} slot={} category={} preset={} volume={} "
+                        + "sensitivity={} origin={}",
                 topic,
                 elementId,
                 payload.get("screen"),
                 payload.get("action"),
+                operation,
                 payload.get("slot"),
-                origin);
+                payload.get("category"),
+                payload.get("preset"),
+                payload.get("volume"),
+                payload.get("sensitivity"),
+                origin
+        );
 
         Map<String, Object> published = publishUiEvent(topic, payload, origin);
+        Map<String, Object> dispatched = new LinkedHashMap<>(payload);
+        dispatched.put("eventId", published.get("eventId"));
+        dispatched.put("delivered", published.get("delivered"));
+        dispatched.put("listenerFailures", published.get("listenerFailures"));
+        publishUiLifecycle(EngineEventTopics.UI_ACTION_DISPATCHED, dispatched, origin, "dispatched");
         context.getLogger().info("Html UI event published topic={} eventId={} delivered={} listenerFailures={} origin={}",
                 topic,
                 published.get("eventId"),
@@ -355,11 +577,38 @@ public final class FrozenLandsHtmlUiRuntime {
         return consumed || intValue(published.get("delivered"), 0) > 0;
     }
 
+    private boolean rejectUiAction(Map<String, Object> payload, String origin, String reason) {
+        publishUiLifecycle(EngineEventTopics.UI_ACTION_REJECTED, payload, origin, reason);
+        context.getLogger().info(
+                "Html UI action rejected topic={} elementId={} operation={} reason={} origin={}",
+                payload.get("event"),
+                payload.get("elementId"),
+                payload.get("operation"),
+                reason,
+                origin
+        );
+        return true;
+    }
+
+    private void publishUiLifecycle(String topic, Map<String, Object> action, String origin, String reason) {
+        Map<String, Object> payload = new LinkedHashMap<>(action == null ? Map.of() : action);
+        payload.put("origin", origin == null ? "" : origin);
+        payload.put("reason", reason == null ? "" : reason);
+        context.getModuleRegistry().publishEvent(topic, payload, UI_MODULE_ID, Map.of(
+                "uiAction", true,
+                "screen", screen()
+        ));
+    }
+
     private boolean duplicateClick(Map<String, Object> payload) {
         String fingerprint = safeString(payload.get("event"))
                 + "|" + safeString(payload.get("elementId"))
                 + "|" + safeString(payload.get("action"))
-                + "|" + safeString(payload.get("slot"));
+                + "|" + safeString(payload.get("slot"))
+                + "|" + safeString(payload.get("category"))
+                + "|" + safeString(payload.get("preset"))
+                + "|" + safeString(payload.get("volume"))
+                + "|" + safeString(payload.get("sensitivity"));
         long now = System.nanoTime();
         if (fingerprint.equals(lastClickFingerprint) && now - lastClickFingerprintAtNanos < 120_000_000L) {
             return true;
@@ -385,14 +634,35 @@ public final class FrozenLandsHtmlUiRuntime {
             topic = legacyActionTopic(action);
         }
         String slot = target.data("slot", "");
+        String operation = target.data("operation", "");
         String module = target.data("module", "");
         String command = target.data("command", "");
+
+        copyDataValue(target, payload, "category");
+        copyDataValue(target, payload, "preset");
+        copyDataValue(target, payload, "volume");
+        copyDataValue(target, payload, "sensitivity");
+        copyDataValue(target, payload, "section");
+        copyDataValue(target, payload, "value");
+        copyDataValue(target, payload, "setting");
+
+        String controlValue = target.attribute("value", "").trim();
+        if (!controlValue.isBlank()) {
+            payload.put("value", controlValue);
+            String setting = target.data("setting", "").trim();
+            if ("volume".equals(setting)) {
+                payload.put("volume", controlValue);
+            } else if ("sensitivity".equals(setting)) {
+                payload.put("sensitivity", controlValue);
+            }
+        }
 
         payload.put("event", topic);
         payload.put("topic", topic);
         payload.put("action", action);
         payload.put("elementId", elementId);
         payload.put("slot", slot);
+        payload.put("operation", operation);
         payload.put("screen", screen());
         payload.put("source", "html-dom");
         payload.put("htmlUi", true);
@@ -406,6 +676,17 @@ public final class FrozenLandsHtmlUiRuntime {
         return payload;
     }
 
+    private void copyDataValue(
+            UiDomElement target,
+            Map<String, Object> payload,
+            String key
+    ) {
+        String value = target.data(key, "");
+        if (!value.isBlank()) {
+            payload.put(key, value);
+        }
+    }
+
     private String legacyActionTopic(String action) {
         String safeAction = action == null ? "" : action.trim();
         if ("game.new".equals(safeAction)) return "ui.menu.newGame";
@@ -413,7 +694,11 @@ public final class FrozenLandsHtmlUiRuntime {
         if ("game.refreshSaves".equals(safeAction)) return "ui.menu.refreshSaves";
         if ("game.loadSlot".equals(safeAction)) return "ui.menu.loadSlot";
         if ("game.save".equals(safeAction)) return "ui.menu.save";
+        if ("game.overwriteSave".equals(safeAction)) return "ui.menu.overwriteSave";
+        if ("game.deleteSave".equals(safeAction)) return "ui.menu.deleteSave";
         if ("game.resume".equals(safeAction)) return "ui.menu.resume";
+        if ("ui.settings".equals(safeAction)) return "ui.menu.settings";
+        if ("ui.settingsBack".equals(safeAction)) return "ui.menu.settingsBack";
         if ("ui.mainMenu".equals(safeAction)) return "ui.menu.mainMenu";
         if (("game." + "exitToDesktop").equals(safeAction)) return "ui.menu.exitToDesktop";
         return "";
@@ -495,6 +780,19 @@ public final class FrozenLandsHtmlUiRuntime {
         return dispatchUiEvent(topic, payload, origin);
     }
 
+    private Map<String, Object> eventPayload(Map<String, Object> event) {
+        if (event == null) {
+            return Map.of();
+        }
+        Object payload = event.get("payload");
+        if (!(payload instanceof Map<?, ?> raw)) {
+            return Map.of();
+        }
+        Map<String, Object> copy = new LinkedHashMap<>();
+        raw.forEach((key, value) -> copy.put(String.valueOf(key), value));
+        return copy;
+    }
+
     private boolean dataBoolean(UiDomElement target, String key, boolean fallback) {
         return booleanValue(target.data(key, String.valueOf(fallback)), fallback);
     }
@@ -549,8 +847,139 @@ public final class FrozenLandsHtmlUiRuntime {
         applyGameplayGate(false, reason);
     }
 
+    public void openSettings(String requestedReturnScreen, String reason) {
+        String current = screen();
+        String requested = requestedReturnScreen == null
+                ? ""
+                : requestedReturnScreen.trim();
+        if ("main-menu".equals(requested) || "pause".equals(requested)) {
+            settingsReturnScreen = requested;
+        } else if ("main-menu".equals(current) || "pause".equals(current)) {
+            settingsReturnScreen = current;
+        }
+        setSettingsSection("overview");
+        setScreen("settings");
+        applyGameplayGate(true, reason == null || reason.isBlank()
+                ? "html-ui-settings-open"
+                : reason);
+    }
+
+    public void closeSettings(String reason) {
+        String target = "pause".equals(settingsReturnScreen)
+                ? "pause"
+                : "main-menu";
+        setSettingsSection("overview");
+        setScreen(target);
+        applyGameplayGate(true, reason == null || reason.isBlank()
+                ? "html-ui-settings-close"
+                : reason);
+    }
+
+    public String settingsReturnScreen() {
+        return settingsReturnScreen;
+    }
+
+    public String settingsSection() {
+        return settingsSection;
+    }
+
+    public void setSettingsSection(String section) {
+        String normalized = section == null
+                ? "overview"
+                : section.trim().toLowerCase(Locale.ROOT);
+        if (!"graphics".equals(normalized)
+                && !"audio".equals(normalized)
+                && !"controls".equals(normalized)) {
+            normalized = "overview";
+        }
+        settingsSection = normalized;
+        setSettingsPanelVisible(
+                "settings-panel-overview",
+                "overview".equals(normalized)
+        );
+        setSettingsPanelVisible(
+                "settings-panel-graphics",
+                "graphics".equals(normalized)
+        );
+        setSettingsPanelVisible(
+                "settings-panel-audio",
+                "audio".equals(normalized)
+        );
+        setSettingsPanelVisible(
+                "settings-panel-controls",
+                "controls".equals(normalized)
+        );
+        panel.invalidateLayout();
+        panel.repaintHost();
+    }
+
+    private void setSettingsPanelVisible(String elementId, boolean visible) {
+        document().getElementById(elementId).ifPresent(panelElement -> {
+            panelElement.setAttribute(
+                    "data-visible",
+                    visible ? "true" : "false"
+            );
+            if (visible) {
+                panelElement.classList().add("active");
+            } else {
+                panelElement.classList().remove("active");
+            }
+            panelElement.removeAttribute("style");
+        });
+    }
+
+    public void setRangeControlValue(
+            String rangeId,
+            float value,
+            String valueLabelId,
+            String displayValue
+    ) {
+        String formatted = formatControlValue(value);
+        document().getElementById(rangeId).ifPresent(range ->
+                range.setAttribute("value", formatted)
+        );
+        if (valueLabelId != null && !valueLabelId.isBlank()) {
+            setText(valueLabelId, displayValue);
+        } else {
+            panel.repaintHost();
+        }
+    }
+
+    private String formatControlValue(float value) {
+        String formatted = String.format(Locale.ROOT, "%.4f", value);
+        while (formatted.endsWith("0")) {
+            formatted = formatted.substring(0, formatted.length() - 1);
+        }
+        return formatted.endsWith(".")
+                ? formatted.substring(0, formatted.length() - 1)
+                : formatted;
+    }
+
+    public void setSelectedGraphicsPreset(String preset) {
+        String selected = preset == null
+                ? "HIGH"
+                : preset.trim().toUpperCase(Locale.ROOT);
+        Map<String, String> buttons = Map.of(
+                "LOW", "btn-graphics-low",
+                "MEDIUM", "btn-graphics-medium",
+                "HIGH", "btn-graphics-high",
+                "ULTRA", "btn-graphics-ultra"
+        );
+        buttons.forEach((name, elementId) ->
+                document().getElementById(elementId).ifPresent(button -> {
+                    if (name.equals(selected)) {
+                        button.classList().add("selected");
+                    } else {
+                        button.classList().remove("selected");
+                    }
+                })
+        );
+        panel.invalidateLayout();
+        panel.repaintHost();
+    }
+
     public void reapplyCurrentGameplayGate(String reason) {
-        applyGameplayGate("main-menu".equals(screen()) || "pause".equals(screen()), reason);
+        applyGameplayGate(isMenuScreen(screen()), reason);
     }
 
     public void applyGameplayGate(boolean menuVisible, String reason) {
@@ -590,6 +1019,15 @@ public final class FrozenLandsHtmlUiRuntime {
             enterGameplay("escape-resume");
             return true;
         }
+        if ("settings".equals(current)) {
+            if (!"overview".equals(settingsSection)) {
+                setSettingsSection("overview");
+                showStatus("Select a category.");
+                return true;
+            }
+            closeSettings("escape-settings");
+            return true;
+        }
         setScreen("pause");
         applyGameplayGate(true, "escape-pause");
         return true;
@@ -603,6 +1041,15 @@ public final class FrozenLandsHtmlUiRuntime {
         }
         if ("main-menu".equals(current)) {
             applyGameplayGate(true, "toggle-main-menu");
+            return;
+        }
+        if ("settings".equals(current)) {
+            if (!"overview".equals(settingsSection)) {
+                setSettingsSection("overview");
+                showStatus("Select a category.");
+                return;
+            }
+            closeSettings("toggle-settings");
             return;
         }
         setScreen("pause");
@@ -655,6 +1102,7 @@ public final class FrozenLandsHtmlUiRuntime {
     }
 
     private void renderSaveList(String elementId, List<Map<String, Object>> saves) {
+        boolean pauseList = "pause-save-list".equals(elementId);
         document().getElementById(elementId).ifPresent(list -> {
             list.clearChildren();
             updateSaveListScrollState(elementId, saves.size());
@@ -668,9 +1116,10 @@ public final class FrozenLandsHtmlUiRuntime {
             for (int index = saves.size() - 1; index >= 0; index--) {
                 Map<String, Object> save = saves.get(index);
                 boolean selected = index == saves.size() - 1;
-                list.appendChild(saveButton(save, selected));
+                list.appendChild(saveRow(save, selected, pauseList));
             }
         });
+        reapplyBusyOperations();
         panel.invalidateLayout();
         panel.repaintHost();
     }
@@ -686,25 +1135,67 @@ public final class FrozenLandsHtmlUiRuntime {
         document().getElementById(parentShellId).ifPresent(shell -> shell.setAttribute("class", shellClass));
     }
 
-    private UiDomElement saveButton(Map<String, Object> save, boolean selected) {
+    private UiDomElement saveRow(Map<String, Object> save, boolean selected, boolean pauseList) {
         String slot = safeString(save.get("slot"));
         String modifiedAt = safeString(save.get("modifiedAt"));
 
-        UiDomElement button = document().createElement("button");
-        button.setAttribute("class", selected ? "ui-button save-slot-button selected" : "ui-button save-slot-button");
-        button.setAttribute("data-event", "ui.menu.loadSlot");
-        button.setAttribute("data-action", "game.loadSlot");
-        button.setAttribute("data-slot", slot);
-        button.setAttribute("title", slot.isBlank() ? DEFAULT_SAVE_SLOT : slot);
+        UiDomElement row = document().createElement("div");
+        row.setAttribute("class", pauseList ? "save-slot-row pause-save-slot-row" : "save-slot-row");
+        row.setAttribute("data-slot", slot);
+
+        UiDomElement loadButton = document().createElement("button");
+        loadButton.setAttribute("class", selected ? "ui-button save-slot-button selected" : "ui-button save-slot-button");
+        loadButton.setAttribute("data-event", "ui.menu.loadSlot");
+        loadButton.setAttribute("data-action", "game.loadSlot");
+        loadButton.setAttribute("data-operation", "runtime.game.start");
+        loadButton.setAttribute("data-slot", slot);
+        loadButton.setAttribute("title", "Load " + saveDisplayName(slot));
 
         UiDomElement name = textElement("span", "save-slot-name", saveDisplayName(slot));
         UiDomElement meta = document().createElement("span");
         meta.setAttribute("class", "save-slot-meta");
         meta.appendChild(textElement("i", "fa-solid fa-clock save-slot-clock", ""));
         meta.appendChild(textElement("span", "save-slot-time", saveTimestamp(modifiedAt)));
+        loadButton.appendChild(name);
+        loadButton.appendChild(meta);
+        row.appendChild(loadButton);
 
-        button.appendChild(name);
-        button.appendChild(meta);
+        if (pauseList) {
+            row.appendChild(saveActionButton(
+                    slot,
+                    "ui.menu.overwriteSave",
+                    "game.overwriteSave",
+                    "Overwrite " + saveDisplayName(slot),
+                    "fa-floppy-disk",
+                    "overwrite"
+            ));
+        }
+        row.appendChild(saveActionButton(
+                slot,
+                "ui.menu.deleteSave",
+                "game.deleteSave",
+                "Delete " + saveDisplayName(slot),
+                "fa-trash",
+                "delete"
+        ));
+        return row;
+    }
+
+    private UiDomElement saveActionButton(
+            String slot,
+            String event,
+            String action,
+            String title,
+            String iconClass,
+            String kind
+    ) {
+        UiDomElement button = document().createElement("button");
+        button.setAttribute("class", "ui-button save-slot-action save-slot-action-" + kind);
+        button.setAttribute("data-event", event);
+        button.setAttribute("data-action", action);
+        button.setAttribute("data-slot", slot);
+        button.setAttribute("title", title);
+        button.appendChild(textElement("i", "fa-solid " + iconClass + " save-slot-action-icon", ""));
         return button;
     }
 
@@ -756,10 +1247,13 @@ public final class FrozenLandsHtmlUiRuntime {
         document().getElementById("btn-continue").ifPresent(button -> {
             if (saves.isEmpty()) {
                 button.setAttribute("disabled", "disabled");
+                button.removeAttribute("data-operation-disabled-owned");
                 button.setAttribute("data-slot", "");
             } else {
                 Map<String, Object> latest = latestSave(saves);
-                button.removeAttribute("disabled");
+                if (!operationBusy(button.data("operation", ""))) {
+                    button.removeAttribute("disabled");
+                }
                 button.setAttribute("data-slot", safeString(latest.get("slot")));
             }
         });
@@ -777,6 +1271,7 @@ public final class FrozenLandsHtmlUiRuntime {
         setText("load-status", message);
         setText("pause-load-status", message);
         setText("main-menu-status", message);
+        setText("settings-status", message);
     }
 
     private void setText(String elementId, String value) {
@@ -808,6 +1303,7 @@ public final class FrozenLandsHtmlUiRuntime {
         setScreenNodeVisible("screen-hud", "hud".equals(screen()));
         setScreenNodeVisible("screen-pause", "pause".equals(screen()));
         setScreenNodeVisible("screen-main-menu", "main-menu".equals(screen()));
+        setScreenNodeVisible("screen-settings", "settings".equals(screen()));
         document().getElementById("screen-overlay")
                 .ifPresent(element -> element.setAttribute("style", sizeStyle));
         panel.invalidateLayout();
@@ -853,6 +1349,12 @@ public final class FrozenLandsHtmlUiRuntime {
 
     public void setScreen(String screen) {
         String safeScreen = screen == null || screen.isBlank() ? "hud" : screen;
+        String currentScreen = screen();
+        if ("settings".equals(safeScreen)
+                && ("main-menu".equals(currentScreen)
+                || "pause".equals(currentScreen))) {
+            settingsReturnScreen = currentScreen;
+        }
         document().getElementById("fl-root").ifPresent(root -> {
             root.setAttribute("data-screen", safeScreen);
             root.setAttribute("data-mode", modeForScreen(safeScreen));
@@ -860,14 +1362,40 @@ public final class FrozenLandsHtmlUiRuntime {
         setScreenNodeVisible("screen-hud", "hud".equals(safeScreen));
         setScreenNodeVisible("screen-pause", "pause".equals(safeScreen));
         setScreenNodeVisible("screen-main-menu", "main-menu".equals(safeScreen));
+        setScreenNodeVisible("screen-settings", "settings".equals(safeScreen));
+        if ("settings".equals(safeScreen)) {
+            setSettingsSection(settingsSection);
+        }
         applyScreenChrome(safeScreen);
         panel.invalidateLayout();
         panel.repaintHost();
     }
 
     private void applyScreenChrome(String screen) {
+        boolean settings = "settings".equals(screen);
+        boolean settingsFromPause = settings
+                && "pause".equals(settingsReturnScreen);
         setElementVisibleClass("main-menu-background", "main-menu".equals(screen));
-        setElementVisibleClass("screen-overlay", "pause".equals(screen));
+        setElementVisibleClass(
+                "screen-overlay",
+                "pause".equals(screen) || settingsFromPause
+        );
+        document().getElementById("screen-settings").ifPresent(element ->
+                element.setAttribute(
+                        "class",
+                        (settingsFromPause
+                                ? "screen settings settings-from-pause"
+                                : "screen settings settings-from-main")
+                                + (settings ? " settings-open" : "")
+                )
+        );
+        document().getElementById("settings-card").ifPresent(element ->
+                element.setAttribute(
+                        "class",
+                        "menu-card settings-card"
+                                + (settings ? " settings-open" : "")
+                )
+        );
     }
 
     private void setElementVisibleClass(String elementId, boolean visible) {
@@ -880,8 +1408,20 @@ public final class FrozenLandsHtmlUiRuntime {
     private void setScreenNodeVisible(String elementId, boolean visible) {
         document().getElementById(elementId).ifPresent(node -> {
             node.setAttribute("data-visible", visible ? "true" : "false");
-            node.setAttribute("style", screenNodeStyle(visible));
+            node.setAttribute(
+                    "style",
+                    "screen-settings".equals(elementId)
+                            ? settingsScreenNodeStyle()
+                            : screenNodeStyle(visible)
+            );
         });
+    }
+
+    private String settingsScreenNodeStyle() {
+        String size = viewportSizeStyle();
+        String layout = "display: flex; align-items: center; "
+                + "justify-content: center;";
+        return size.isBlank() ? layout : layout + " " + size;
     }
 
     private String modeForScreen(String screen) {
@@ -891,11 +1431,35 @@ public final class FrozenLandsHtmlUiRuntime {
         if ("pause".equals(screen)) {
             return "paused";
         }
+        if ("settings".equals(screen)) {
+            return "pause".equals(settingsReturnScreen)
+                    ? "paused"
+                    : "boot";
+        }
         return "gameplay";
+    }
+
+    private boolean isMenuScreen(String screen) {
+        return "main-menu".equals(screen)
+                || "pause".equals(screen)
+                || "settings".equals(screen);
     }
 
     public String screen() {
         return document().getElementById("fl-root").map(root -> root.data("screen", "hud")).orElse("hud");
+    }
+
+    public void close() {
+        for (AutoCloseable subscription : List.copyOf(eventSubscriptions)) {
+            try {
+                subscription.close();
+            } catch (Exception ignored) {
+            }
+        }
+        eventSubscriptions.clear();
+        synchronized (busyOperations) {
+            busyOperations.clear();
+        }
     }
 
     public void openDevTools() {

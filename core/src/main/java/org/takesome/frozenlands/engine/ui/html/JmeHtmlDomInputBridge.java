@@ -15,8 +15,12 @@ import org.takesome.frozenlands.engine.EngineContext;
 
 import java.awt.Component;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 
 public final class JmeHtmlDomInputBridge implements RawInputListener {
     private final EngineContext context;
@@ -24,6 +28,10 @@ public final class JmeHtmlDomInputBridge implements RawInputListener {
     private int lastMouseX;
     private int lastMouseY;
     private int awtButtonMask;
+    private int pressedMouseX;
+    private int pressedMouseY;
+    private boolean pointerMovedWhilePressed;
+    private boolean uiPointerCapture;
 
     public JmeHtmlDomInputBridge(EngineContext context, FrozenLandsHtmlUiRuntime runtime) {
         this.context = context;
@@ -40,7 +48,11 @@ public final class JmeHtmlDomInputBridge implements RawInputListener {
 
     @Override
     public void onMouseMotionEvent(MouseMotionEvent event) {
-        if (!available() || event == null || event.isConsumed()) {
+        if (event == null || !available()) {
+            return;
+        }
+        boolean capturedMotion = uiPointerCapture && awtButtonMask != 0;
+        if (event.isConsumed() && !capturedMotion) {
             return;
         }
 
@@ -48,14 +60,32 @@ public final class JmeHtmlDomInputBridge implements RawInputListener {
         int y = toAwtY(event.getY());
         lastMouseX = x;
         lastMouseY = y;
+        if (awtButtonMask != 0
+                && (Math.abs(x - pressedMouseX) > 3
+                || Math.abs(y - pressedMouseY) > 3)) {
+            pointerMovedWhilePressed = true;
+        }
 
         HtmlDomSwingPanel panel = runtime.panel();
-        panel.setSize(width(), height());
-        panel.ensureLayout();
 
         int when = now();
         int modifiers = awtButtonMask;
-        dispatch(panel, new MouseEvent(panel, MouseEvent.MOUSE_MOVED, when, modifiers, x, y, 0, false, MouseEvent.NOBUTTON));
+        int motionEventId = awtMotionEventId(modifiers);
+        dispatch(panel, new MouseEvent(
+                panel,
+                motionEventId,
+                when,
+                modifiers,
+                x,
+                y,
+                0,
+                false,
+                MouseEvent.NOBUTTON
+        ));
+        if (motionEventId == MouseEvent.MOUSE_DRAGGED
+                && (uiPointerCapture || capturesPointer(x, y))) {
+            event.setConsumed();
+        }
 
         int wheelDelta = event.getDeltaWheel();
         if (wheelDelta != 0) {
@@ -81,7 +111,10 @@ public final class JmeHtmlDomInputBridge implements RawInputListener {
 
     @Override
     public void onMouseButtonEvent(MouseButtonEvent event) {
-        if (!available() || event == null || event.isConsumed()) {
+        if (event == null || !available()) {
+            return;
+        }
+        if (event.isConsumed() && !uiPointerCapture) {
             return;
         }
 
@@ -91,13 +124,15 @@ public final class JmeHtmlDomInputBridge implements RawInputListener {
         lastMouseY = y;
 
         HtmlDomSwingPanel panel = runtime.panel();
-        panel.setSize(width(), height());
-        panel.ensureLayout();
 
         int awtButton = toAwtButton(event.getButtonIndex());
         int buttonMask = toAwtButtonMask(awtButton);
         if (event.isPressed()) {
             awtButtonMask |= buttonMask;
+            pressedMouseX = x;
+            pressedMouseY = y;
+            pointerMovedWhilePressed = false;
+            uiPointerCapture = capturesPointer(x, y);
         } else {
             awtButtonMask &= ~buttonMask;
         }
@@ -108,13 +143,30 @@ public final class JmeHtmlDomInputBridge implements RawInputListener {
         dispatch(panel, new MouseEvent(panel, id, when, modifiers, x, y, 1, false, awtButton));
 
         boolean directClickHandled = false;
-        if (event.isReleased()) {
+        boolean capturedPointer = uiPointerCapture;
+        if (event.isReleased() && !pointerMovedWhilePressed) {
             directClickHandled = dispatchUiPointerClick(x, y);
-            dispatch(panel, new MouseEvent(panel, MouseEvent.MOUSE_CLICKED, when, modifiers, x, y, 1, false, awtButton));
+            dispatch(panel, new MouseEvent(
+                    panel,
+                    MouseEvent.MOUSE_CLICKED,
+                    when,
+                    modifiers,
+                    x,
+                    y,
+                    1,
+                    false,
+                    awtButton
+            ));
         }
 
-        if (directClickHandled || capturesPointer(x, y)) {
+        if (directClickHandled
+                || capturedPointer
+                || capturesPointer(x, y)) {
             event.setConsumed();
+        }
+        if (event.isReleased()) {
+            uiPointerCapture = false;
+            pointerMovedWhilePressed = false;
         }
     }
 
@@ -168,7 +220,6 @@ public final class JmeHtmlDomInputBridge implements RawInputListener {
             return true;
         }
         HtmlDomSwingPanel panel = runtime.panel();
-        panel.ensureLayout();
         for (HtmlDomHitTestEngine.Hit hit : panel.hitTest().scrollHits()) {
             if (hit.contains(x, y)) {
                 return true;
@@ -205,7 +256,6 @@ public final class JmeHtmlDomInputBridge implements RawInputListener {
 
     private UiDomElement interactiveHitAt(int x, int y) {
         HtmlDomSwingPanel panel = runtime.panel();
-        panel.ensureLayout();
         var hits = panel.hitTest().hits();
         for (int index = hits.size() - 1; index >= 0; index--) {
             HtmlDomHitTestEngine.Hit hit = hits.get(index);
@@ -225,10 +275,107 @@ public final class JmeHtmlDomInputBridge implements RawInputListener {
 
     private void dispatch(Component component, java.awt.AWTEvent event) {
         try {
-            component.dispatchEvent(event);
+            if (component instanceof HtmlDomSwingPanel panel) {
+                dispatchToPanelListeners(panel, event);
+            } else {
+                component.dispatchEvent(event);
+            }
         } catch (RuntimeException exception) {
-            context.getLogger().error("Html UI input dispatch failed event={} message={}", event, exception.toString(), exception);
+            context.getLogger().error(
+                    "Html UI input dispatch failed event={} message={}",
+                    event,
+                    exception.toString(),
+                    exception
+            );
         }
+    }
+
+    private void dispatchToPanelListeners(
+            HtmlDomSwingPanel panel,
+            java.awt.AWTEvent event
+    ) {
+        if (event instanceof MouseWheelEvent wheelEvent) {
+            for (MouseWheelListener listener : panel.getMouseWheelListeners()) {
+                listener.mouseWheelMoved(wheelEvent);
+            }
+            return;
+        }
+        if (event instanceof MouseEvent mouseEvent) {
+            dispatchMouseEvent(panel, mouseEvent);
+            return;
+        }
+        if (event instanceof KeyEvent keyEvent) {
+            for (KeyListener listener : panel.getKeyListeners()) {
+                switch (keyEvent.getID()) {
+                    case KeyEvent.KEY_PRESSED ->
+                            listener.keyPressed(keyEvent);
+                    case KeyEvent.KEY_RELEASED ->
+                            listener.keyReleased(keyEvent);
+                    case KeyEvent.KEY_TYPED ->
+                            listener.keyTyped(keyEvent);
+                    default -> {
+                    }
+                }
+            }
+            return;
+        }
+        panel.dispatchEvent(event);
+    }
+
+    static void dispatchMouseEvent(
+            HtmlDomSwingPanel panel,
+            MouseEvent event
+    ) {
+        switch (event.getID()) {
+            case MouseEvent.MOUSE_MOVED -> {
+                for (MouseMotionListener listener
+                        : panel.getMouseMotionListeners()) {
+                    listener.mouseMoved(event);
+                }
+            }
+            case MouseEvent.MOUSE_DRAGGED -> {
+                for (MouseMotionListener listener
+                        : panel.getMouseMotionListeners()) {
+                    listener.mouseDragged(event);
+                }
+            }
+            case MouseEvent.MOUSE_PRESSED -> {
+                for (MouseListener listener : panel.getMouseListeners()) {
+                    listener.mousePressed(event);
+                }
+            }
+            case MouseEvent.MOUSE_RELEASED -> {
+                for (MouseListener listener : panel.getMouseListeners()) {
+                    listener.mouseReleased(event);
+                }
+            }
+            case MouseEvent.MOUSE_CLICKED -> {
+                for (MouseListener listener : panel.getMouseListeners()) {
+                    listener.mouseClicked(event);
+                }
+            }
+            case MouseEvent.MOUSE_ENTERED -> {
+                for (MouseListener listener : panel.getMouseListeners()) {
+                    listener.mouseEntered(event);
+                }
+            }
+            case MouseEvent.MOUSE_EXITED -> {
+                for (MouseListener listener : panel.getMouseListeners()) {
+                    listener.mouseExited(event);
+                }
+            }
+            default -> {
+            }
+        }
+    }
+
+    static int awtMotionEventId(int modifiers) {
+        int buttonMasks = MouseEvent.BUTTON1_DOWN_MASK
+                | MouseEvent.BUTTON2_DOWN_MASK
+                | MouseEvent.BUTTON3_DOWN_MASK;
+        return (modifiers & buttonMasks) != 0
+                ? MouseEvent.MOUSE_DRAGGED
+                : MouseEvent.MOUSE_MOVED;
     }
 
     private int clampX(int x) {

@@ -6,6 +6,16 @@ local M = {
     "status.set",
     "screen",
     "screen.set",
+    "settings.open",
+    "settings.close",
+    "settings.section",
+    "settings.preferences",
+    "settings.graphics.select",
+    "settings.graphics.applyPending",
+    "settings.controls.sensitivity.select",
+    "settings.controls.applyPending",
+    "audio.volume.status",
+    "audio.volume.set",
     "gameplay.enter",
     "gameplay.gate",
     "saves.refresh",
@@ -29,6 +39,40 @@ end
 
 function M.call(command, args)
   return call_module(command, args)
+end
+
+function M.open_settings(return_screen)
+  return call_module("settings.open", {
+    returnScreen = return_screen or "main-menu"
+  })
+end
+
+function M.close_settings()
+  return call_module("settings.close", {})
+end
+
+function M.show_settings_section(section)
+  return call_module("settings.section", {
+    section = section or "overview"
+  })
+end
+
+function M.select_graphics_preset(preset)
+  return call_module("settings.graphics.select", {
+    preset = preset or "HIGH"
+  })
+end
+
+function M.select_mouse_sensitivity(sensitivity)
+  return call_module("settings.controls.sensitivity.select", {
+    sensitivity = sensitivity or 1.0
+  })
+end
+
+function M.set_master_volume(volume)
+  return call_module("audio.volume.set", {
+    volume = volume or 1.0
+  })
 end
 
 function M.emit(topic, payload)

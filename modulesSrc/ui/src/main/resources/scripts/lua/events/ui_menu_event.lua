@@ -9,6 +9,28 @@ local function status(message)
   return ui.call("status.set", { message = message or "" })
 end
 
+local function safe_module_call(moduleId, commandId, request)
+  local ok, response = pcall(
+    java.callModule,
+    moduleId,
+    commandId,
+    request or {}
+  )
+  if not ok then
+    return false, { ok = false, error = tostring(response) }
+  end
+  return response.ok ~= false, response
+end
+
+local function title_case(value)
+  local text = tostring(value or "")
+  if text == "" then
+    return ""
+  end
+  return string.upper(string.sub(text, 1, 1))
+      .. string.lower(string.sub(text, 2))
+end
+
 local function refresh_saves()
   return ui.call("saves.refresh", {})
 end
@@ -42,7 +64,8 @@ local function start_game_runtime(reason, operation, slot)
   show_loading("Preparing expedition runtime", 0.02)
   local request = {
     reason = reason or "lua-ui-start-game-runtime",
-    operation = operation or "newGame"
+    operation = operation or "newGame",
+    source = "frozenlands.ui"
   }
   if slot ~= nil and slot ~= "" then
     request.slot = slot
@@ -52,6 +75,11 @@ local function start_game_runtime(reason, operation, slot)
     update_loading("Game runtime failed to start", 1.0)
     status("Game runtime failed to start.")
     return false, response
+  end
+  if response.accepted == false and response.busy then
+    update_loading("Expedition start already in progress", response.progress or 0.04)
+    status("Expedition is already starting. Please wait.")
+    return true, response
   end
   if response.alreadyStarted then
     update_loading("Preparing expedition scene", 0.96)
@@ -118,6 +146,17 @@ local function load_slot(slot)
     gate_menu(true, "lua-ui-load-save-runtime-failed")
     return { ok = false, handled = true, operation = "loadSlot", slot = safeSlot, runtime = runtimeStart }
   end
+  if runtimeStart.duplicate and runtimeStart.busy then
+    return {
+      ok = true,
+      handled = true,
+      operation = "loadSlot",
+      slot = safeSlot,
+      runtime = runtimeStart,
+      duplicate = true,
+      pending = true
+    }
+  end
   if runtimeStart.alreadyStarted then
     return do_load_slot(safeSlot, runtimeStart)
   end
@@ -133,6 +172,16 @@ handlers["ui.menu.newGame"] = function(_)
   if not runtimeOk then
     gate_menu(true, "lua-ui-new-game-runtime-failed")
     return { ok = false, handled = true, operation = "newGame", runtime = runtimeStart }
+  end
+  if runtimeStart.duplicate and runtimeStart.busy then
+    return {
+      ok = true,
+      handled = true,
+      operation = "newGame",
+      runtime = runtimeStart,
+      duplicate = true,
+      pending = true
+    }
   end
   if runtimeStart.alreadyStarted then
     local spawn = java.callModule("engine.world", "spawnPlayer", {})
@@ -181,9 +230,165 @@ handlers["ui.menu.save"] = function(payload)
   return { ok = saved.ok ~= false, handled = true, operation = "save", slot = safeSlot, save = saved }
 end
 
+handlers["ui.menu.overwriteSave"] = function(payload)
+  local safeSlot = payload.slot or DEFAULT_SAVE_SLOT
+  if safeSlot == "" then
+    safeSlot = DEFAULT_SAVE_SLOT
+  end
+  local overwritten = java.callModule("engine.save", "overwrite", { slot = safeSlot })
+  refresh_saves()
+  if overwritten.ok == false then
+    status("Cannot overwrite missing checkpoint: " .. safeSlot .. ".")
+  else
+    status("Checkpoint overwritten: " .. safeSlot .. ".")
+  end
+  return {
+    ok = overwritten.ok ~= false,
+    handled = true,
+    operation = "overwriteSave",
+    slot = safeSlot,
+    overwrite = overwritten
+  }
+end
+
+handlers["ui.menu.deleteSave"] = function(payload)
+  local safeSlot = payload.slot or DEFAULT_SAVE_SLOT
+  if safeSlot == "" then
+    safeSlot = DEFAULT_SAVE_SLOT
+  end
+  local deleted = java.callModule("engine.save", "delete", { slot = safeSlot })
+  refresh_saves()
+  if deleted.ok == false then
+    status("Checkpoint was already missing: " .. safeSlot .. ".")
+  else
+    status("Checkpoint deleted: " .. safeSlot .. ".")
+  end
+  return {
+    ok = deleted.ok ~= false,
+    handled = true,
+    operation = "deleteSave",
+    slot = safeSlot,
+    delete = deleted
+  }
+end
+
 handlers["ui.menu.resume"] = function(_)
   enter_gameplay("lua-ui-resume")
   return { ok = true, handled = true, operation = "resume" }
+end
+
+handlers["ui.menu.settings"] = function(payload)
+  local returnScreen = payload.screen or "main-menu"
+  local opened = ui.call("settings.open", {
+    returnScreen = returnScreen,
+    reason = "lua-ui-settings-open"
+  })
+  status("Select a category.")
+  return {
+    ok = opened.ok ~= false,
+    handled = true,
+    operation = "settings",
+    returnScreen = returnScreen,
+    screen = opened.screen
+  }
+end
+
+handlers["ui.menu.settingsBack"] = function(_)
+  local closed = ui.call("settings.close", {
+    reason = "lua-ui-settings-back"
+  })
+  status("Returned to the previous menu.")
+  return {
+    ok = closed.ok ~= false,
+    handled = true,
+    operation = "settingsBack",
+    screen = closed.screen
+  }
+end
+
+handlers["ui.menu.settings.category"] = function(payload)
+  local category = payload.category or "overview"
+  local changed = ui.call("settings.section", { section = category })
+  status(title_case(category) .. " settings.")
+  return {
+    ok = changed.ok ~= false,
+    handled = true,
+    operation = "settingsCategory",
+    category = changed.section or category
+  }
+end
+
+handlers["ui.menu.settings.overview"] = function(_)
+  local changed = ui.call("settings.section", { section = "overview" })
+  status("Select a category.")
+  return {
+    ok = changed.ok ~= false,
+    handled = true,
+    operation = "settingsOverview"
+  }
+end
+
+handlers["ui.menu.settings.graphicsPreset"] = function(payload)
+  local preset = string.upper(tostring(payload.preset or "HIGH"))
+  local response = ui.call("settings.graphics.select", {
+    preset = preset
+  })
+  if response.applied then
+    status("Graphics preset applied: " .. title_case(response.preset or preset) .. ".")
+  else
+    status("Graphics preset selected: " .. title_case(response.preset or preset)
+      .. ". It will apply when the expedition starts.")
+  end
+  return {
+    ok = response.ok ~= false,
+    handled = true,
+    operation = "graphicsPreset",
+    preset = response.preset or preset,
+    applied = response.applied,
+    deferred = response.deferred,
+    response = response
+  }
+end
+
+handlers["ui.menu.settings.audioVolume"] = function(payload)
+  local volume = tonumber(payload.volume or 1.0) or 1.0
+  local response = ui.call("audio.volume.set", { volume = volume })
+  local applied = response.ok ~= false and response.available ~= false
+  if applied then
+    local percent = math.floor((response.volume or volume) * 100 + 0.5)
+    status("Master volume: " .. tostring(percent) .. "%.")
+  else
+    status("Audio output is not available.")
+  end
+  return {
+    ok = applied,
+    handled = true,
+    operation = "audioVolume",
+    volume = response.volume or volume
+  }
+end
+
+handlers["ui.menu.settings.mouseSensitivity"] = function(payload)
+  local sensitivity = tonumber(payload.sensitivity or 1.0) or 1.0
+  local response = ui.call("settings.controls.sensitivity.select", {
+    sensitivity = sensitivity
+  })
+  if response.applied then
+    status("Mouse sensitivity: " .. tostring(response.sensitivity or sensitivity) .. ".")
+  else
+    status("Mouse sensitivity selected: "
+      .. tostring(response.sensitivity or sensitivity)
+      .. ". It will apply when the player is ready.")
+  end
+  return {
+    ok = response.ok ~= false,
+    handled = true,
+    operation = "mouseSensitivity",
+    sensitivity = response.sensitivity or sensitivity,
+    applied = response.applied,
+    deferred = response.deferred,
+    response = response
+  }
 end
 
 handlers["ui.menu.mainMenu"] = function(_)
@@ -215,6 +420,7 @@ handlers["runtime.game.module.loaded"] = function(payload)
 end
 
 handlers["runtime.game.ready"] = function(payload)
+  ui.call("settings.graphics.applyPending", {})
   local request = payload.request or {}
   local operation = request.operation or "newGame"
   update_loading("Preparing expedition scene", 0.96)
@@ -240,6 +446,7 @@ handlers["runtime.game.failed"] = function(payload)
 end
 
 handlers["player.spawned"] = function(payload)
+  ui.call("settings.controls.applyPending", {})
   update_loading("Expedition ready", 1.0)
   status("Expedition started.")
   enter_gameplay("lua-ui-player-spawned")

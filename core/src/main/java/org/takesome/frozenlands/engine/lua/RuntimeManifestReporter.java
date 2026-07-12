@@ -25,12 +25,13 @@ public final class RuntimeManifestReporter {
 
         LOGGER.info("RuntimeManifest providers={}", providers.keySet());
         LOGGER.info("RuntimeManifest modules={}", modules.keySet());
-        reportModule(modules, "engine.core", List.of("status", "manifest", "modules", "providers", "call.module", "call.provider", "event.publish", "events.snapshot", "events.drain", "script.manifest", "script.list", "script.read", "script.run", "script.autorun", "console.execute", "console.help", "console.version", "console.commandsList", "console.complete", "task.pool.status", "task.list", "task.get", "task.cancel", "service.pool.status", "service.list"));
-        reportModule(modules, "engine.save", List.of("snapshot", "save", "load", "list"));
+        reportModule(modules, "engine.core", List.of("status", "manifest", "modules", "providers", "call.module", "call.provider", "event.publish", "events.snapshot", "events.drain", "script.manifest", "script.list", "script.read", "script.run", "script.autorun", "console.execute", "console.help", "console.version", "console.commandsList", "console.complete", "task.pool.status", "task.list", "task.get", "task.cancel", "service.pool.status", "service.list", "operations.status", "operations.active", "runtime.game.start", "runtime.game.status", "ui.screen.show", "ui.screen.update", "ui.screen.hide"));
+        reportModule(modules, "engine.save", List.of("snapshot", "save", "overwrite", "delete", "load", "list"));
         reportModule(modules, "engine.particles", List.of("status", "snow.enable", "snow.rate", "emit", "impact", "effect.get", "clear"));
         reportModule(modules, "engine.terrain", List.of("status", "chunks", "heightAt", "spawnLocation"));
-        reportModule(modules, "engine.sky", List.of("status", "command.execute", "atmosphere.setGradient", "weather.set", "weather.list", "clock.setTime", "environment.snapshot"));
-        reportModule(modules, "engine.shaders", List.of("status", "setEnabled", "effects", "effect.get", "effect.set", "shadowSettings", "shadowSettings.set"));
+        reportModule(modules, "engine.sky", List.of("status", "command.execute", "atmosphere.setGradient", "preset.set", "preset.list", "clock.setTime", "environment.snapshot"));
+        reportModule(modules, "engine.weather", List.of("status", "set", "preset.set", "preset.list", "intensity.set", "intensity.get", "precipitation.start", "precipitation.stop", "wind.set"));
+        reportModule(modules, "engine.shaders", List.of("status", "setEnabled", "effects", "effect.get", "effect.set", "shadowSettings", "shadowSettings.set", "solarShadows.status", "solarShadows.set"));
         reportModule(modules, "engine.sound", List.of("status", "load", "reload", "list.blocks", "list.events", "event.get", "registry.snapshot", "request", "play"));
         reportModule(modules, "engine.material", List.of("load", "list", "get"));
         reportModule(modules, "engine.model", List.of("load", "list", "detach"));

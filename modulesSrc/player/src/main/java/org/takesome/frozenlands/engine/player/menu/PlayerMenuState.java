@@ -88,7 +88,12 @@ public final class PlayerMenuState extends BaseAppState implements RawInputListe
     }
 
     private void onApplicationFocusChanged(Map<String, Object> event) {
-        setOpen(bool(payload(event), "paused"));
+        Map<?, ?> payload = payload(event);
+        if (bool(payload, "htmlUi")) {
+            setOpen(false);
+            return;
+        }
+        setOpen(bool(payload, "paused"));
     }
 
     private void setOpen(boolean open) {

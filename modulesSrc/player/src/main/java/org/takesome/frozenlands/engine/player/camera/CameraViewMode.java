@@ -14,7 +14,10 @@ public enum CameraViewMode {
     }
 
     public CameraViewMode toggle() {
-        return next();
+        return switch (this) {
+            case FIRST_PERSON -> THIRD_PERSON;
+            case THIRD_PERSON, FRONT_PERSON -> FIRST_PERSON;
+        };
     }
 
     public boolean showsPlayerVisual() {

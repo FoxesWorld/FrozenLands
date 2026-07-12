@@ -12,6 +12,7 @@ import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.ViewPort;
 import org.takesome.frozenlands.engine.events.EngineEventTopics;
 import org.takesome.frozenlands.engine.player.Player;
+import org.takesome.frozenlands.engine.player.camera.CameraViewMode;
 import org.takesome.frozenlands.engine.player.camera.PlayerCameraRig;
 import org.takesome.frozenlands.engine.ui.PlayerHud;
 
@@ -45,7 +46,9 @@ public class UserInputHandler extends UserInputAbstract {
     private final Vector3f tmpForward = new Vector3f();
     private final Vector3f tmpLeft = new Vector3f();
     private final Vector3f tmpWalkDirection = new Vector3f();
+    private final Vector3f tmpFacingDirection = new Vector3f();
     private final float[] angles = {0, 0, 0};
+    private float bodyYaw;
 
     private BetterCharacterControl characterControl;
     private PlayerHud playerHud;
@@ -55,8 +58,7 @@ public class UserInputHandler extends UserInputAbstract {
     private AutoCloseable cameraLookInputSubscription;
     private AutoCloseable consoleVisibilitySubscription;
     private AutoCloseable playerInputEnabledSubscription;
-    private boolean cameraLookInputEnabled = true;
-    private boolean playerInputEnabled = true;
+    private final PlayerInputGate inputGate = new PlayerInputGate();
 
     public UserInputHandler(Player player, Runnable attackCallback) {
         this.playerInterface = player;
@@ -75,6 +77,7 @@ public class UserInputHandler extends UserInputAbstract {
                 playerInterface.getLogger().error(getClass() + " can be attached only to a spatial that has a BetterCharacterControl");
                 return;
             }
+            bodyYaw = PlayerFacingPolicy.yaw(characterControl.getViewDirection(), 0f);
             playerHud.initialize();
             subscribeInputEvents();
             inputInit(UserInputHelper.getInputMaps(getUserInputConfig()));
@@ -113,7 +116,7 @@ public class UserInputHandler extends UserInputAbstract {
     @Override
     protected void controlUpdate(float tpf) {
         init();
-        if (!isInit() || !playerInputEnabled) {
+        if (!isInit() || !inputGate.snapshot().playerInputEnabled()) {
             return;
         }
         publishMoveIntent(new Vector3f(directions[0] ? 1 : directions[1] ? -1 : 0, 0, directions[2] ? 1 : directions[3] ? -1 : 0), 1.0f, tpf);
@@ -121,7 +124,8 @@ public class UserInputHandler extends UserInputAbstract {
 
     @Override
     public void onAnalog(String name, float value, float tpf) {
-        if (!playerInputEnabled || (!cameraLookInputEnabled && name.startsWith("Rotate_"))) {
+        PlayerInputGate.Snapshot gate = inputGate.snapshot();
+        if (!gate.playerInputEnabled() || (!gate.cameraLookEnabled() && isCameraAnalogBinding(name))) {
             return;
         }
         publishLive(EngineEventTopics.PLAYER_INPUT_ANALOG, Map.of(
@@ -134,7 +138,7 @@ public class UserInputHandler extends UserInputAbstract {
 
     @Override
     public void onAction(String binding, boolean isPressed, float tpf) {
-        if (!playerInputEnabled) {
+        if (!inputGate.snapshot().playerInputEnabled()) {
             return;
         }
         publish(EngineEventTopics.PLAYER_INPUT_ACTION, Map.of(
@@ -148,7 +152,7 @@ public class UserInputHandler extends UserInputAbstract {
     @Override
     protected void movePlayer(Vector3f direction, float speedMultiplier, float tpf) {
         init();
-        if (!playerInputEnabled) {
+        if (!inputGate.snapshot().playerInputEnabled()) {
             characterControl.setWalkDirection(Vector3f.ZERO);
             return;
         }
@@ -159,10 +163,10 @@ public class UserInputHandler extends UserInputAbstract {
         setCurrentSpeed(getCurrentSpeed() + actualSpeedChange);
 
         updateCameraMovementBasis();
-        characterControl.setViewDirection(tmpForward);
 
         Vector3f walkDirection = cameraRelativeWalkDirection(direction);
         if (walkDirection.lengthSquared() > MOVEMENT_EPSILON) {
+            updateCharacterFacing(walkDirection);
             walkDirection.multLocal(getCurrentSpeed() * speedMultiplier);
         } else {
             walkDirection.set(Vector3f.ZERO);
@@ -205,6 +209,23 @@ public class UserInputHandler extends UserInputAbstract {
             tmpLeft.set(-tmpForward.z, 0f, tmpForward.x);
             normalizeHorizontal(tmpLeft);
         }
+    }
+
+    private void updateCharacterFacing(Vector3f walkDirection) {
+        PlayerCameraRig cameraRig = playerInterface.getCameraRig();
+        CameraViewMode viewMode = cameraRig == null
+                ? CameraViewMode.FIRST_PERSON
+                : cameraRig.viewMode();
+        if (!PlayerFacingPolicy.resolve(
+                viewMode,
+                tmpForward,
+                walkDirection,
+                tmpFacingDirection
+        )) {
+            return;
+        }
+        characterControl.setViewDirection(tmpFacingDirection);
+        bodyYaw = PlayerFacingPolicy.yaw(tmpFacingDirection, bodyYaw);
     }
 
     private Vector3f cameraRelativeWalkDirection(Vector3f inputDirection) {
@@ -279,34 +300,52 @@ public class UserInputHandler extends UserInputAbstract {
     }
 
     private void handlePlayerInputEnabledEvent(Map<String, Object> event) {
-        applyPlayerInputEnabled(bool(payload(event), "enabled"));
+        PlayerInputGate.Snapshot before = inputGate.snapshot();
+        PlayerInputGate.Snapshot after = inputGate.requestPlayerInputEnabled(bool(payload(event), "enabled"));
+        applyInputGateTransition(before, after, "player-input-request");
     }
 
     private void handleCameraLookInputEnabledEvent(Map<String, Object> event) {
-        applyCameraLookInputEnabled(bool(payload(event), "enabled"));
+        PlayerInputGate.Snapshot before = inputGate.snapshot();
+        PlayerInputGate.Snapshot after = inputGate.requestCameraLookEnabled(bool(payload(event), "enabled"));
+        applyInputGateTransition(before, after, "camera-look-request");
     }
 
     private void handleConsoleVisibilityEvent(Map<String, Object> event) {
-        applyCameraLookInputEnabled(!bool(payload(event), "open"));
+        PlayerInputGate.Snapshot before = inputGate.snapshot();
+        PlayerInputGate.Snapshot after = inputGate.setConsoleOpen(bool(payload(event), "open"));
+        applyInputGateTransition(before, after, "console-visibility");
     }
 
-    private void applyPlayerInputEnabled(boolean enabled) {
-        playerInputEnabled = enabled;
-        if (!enabled) {
-            Arrays.fill(directions, false);
-            setRunning(false);
-            setAttacking(false);
-            setJumping(false);
-            if (characterControl != null) {
-                characterControl.setWalkDirection(Vector3f.ZERO);
-            }
+    private void applyInputGateTransition(
+            PlayerInputGate.Snapshot before,
+            PlayerInputGate.Snapshot after,
+            String reason
+    ) {
+        if (before.playerInputEnabled() && !after.playerInputEnabled()) {
+            clearActiveInputState();
         }
+        if (!before.cameraLookEnabled() && after.cameraLookEnabled()) {
+            ensureCameraLookMappings();
+        }
+        publish(EngineEventTopics.PLAYER_INPUT_GATE_CHANGED, Map.of(
+                "playerRef", playerRef,
+                "reason", reason,
+                "consoleOpen", after.consoleOpen(),
+                "playerInputEnabled", after.playerInputEnabled(),
+                "cameraLookEnabled", after.cameraLookEnabled(),
+                "requestedPlayerInputEnabled", after.requestedPlayerInputEnabled(),
+                "requestedCameraLookEnabled", after.requestedCameraLookEnabled()
+        ));
     }
 
-    private void applyCameraLookInputEnabled(boolean enabled) {
-        cameraLookInputEnabled = enabled;
-        if (enabled) {
-            ensureCameraLookMappings();
+    private void clearActiveInputState() {
+        Arrays.fill(directions, false);
+        setRunning(false);
+        setAttacking(false);
+        setJumping(false);
+        if (characterControl != null) {
+            characterControl.setWalkDirection(Vector3f.ZERO);
         }
     }
 
@@ -318,7 +357,7 @@ public class UserInputHandler extends UserInputAbstract {
         }
         mouseAxis.forEach(inputLine -> {
             String inputName = String.valueOf(((HashMap<?, ?>) inputLine).get("inputName"));
-            if (!inputName.startsWith("Rotate_") || inputManager.hasMapping(inputName)) {
+            if (!isCameraAnalogBinding(inputName) || inputManager.hasMapping(inputName)) {
                 return;
             }
             int inputKey = (Integer) ((HashMap<?, ?>) inputLine).get("inputKey");
@@ -326,6 +365,11 @@ public class UserInputHandler extends UserInputAbstract {
             inputManager.addMapping(inputName, new MouseAxisTrigger(inputKey, negative));
             inputManager.addListener(this, inputName);
         });
+    }
+
+    private boolean isCameraAnalogBinding(String binding) {
+        return binding != null
+                && (binding.startsWith("Rotate_") || binding.startsWith("Zoom_"));
     }
 
     private void handleActionEvent(Map<String, Object> event) {
@@ -356,7 +400,19 @@ public class UserInputHandler extends UserInputAbstract {
         String name = string(payload, "binding", "");
         float value = number(payload, "value", 0f);
         float tpf = number(payload, "tpf", 0f);
-        float rotationMultiplier = isRunning() ? getRotationMultiplierRunning() : getRotationMultiplierWalking();
+        if ("Zoom_In".equals(name) || "Zoom_Out".equals(name)) {
+            float direction = "Zoom_Out".equals(name) ? 1f : -1f;
+            publishLive(EngineEventTopics.PLAYER_CAMERA_ZOOM_REQUESTED, Map.of(
+                    "playerRef", playerRef,
+                    "binding", name,
+                    "direction", direction,
+                    "value", value,
+                    "tpf", tpf
+            ));
+            return;
+        }
+
+        float rotationMultiplier = playerInterface.getRuntimeSettings().lookRotationMultiplier();
         value *= rotationMultiplier * playerInterface.getPlayerOptions().getMouseSensitivity();
 
         switch (name) {
@@ -367,6 +423,7 @@ public class UserInputHandler extends UserInputAbstract {
             default -> { }
         }
         clampCameraPitch();
+        angles[1] = wrapAngle(angles[1]);
         publishLookIntent(name, value);
         publishHeadTurnRequested(name, value, tpf);
     }
@@ -417,7 +474,28 @@ public class UserInputHandler extends UserInputAbstract {
     }
 
     private float headYaw() {
-        return FastMath.clamp(angles[1], -MAX_HEAD_YAW, MAX_HEAD_YAW);
+        float relativeYaw = shortestAngleDelta(bodyYaw, angles[1]);
+        return FastMath.clamp(relativeYaw, -MAX_HEAD_YAW, MAX_HEAD_YAW);
+    }
+
+    private float shortestAngleDelta(float from, float to) {
+        float delta = wrapAngle(to) - wrapAngle(from);
+        if (delta > FastMath.PI) {
+            delta -= FastMath.TWO_PI;
+        } else if (delta < -FastMath.PI) {
+            delta += FastMath.TWO_PI;
+        }
+        return delta;
+    }
+
+    private float wrapAngle(float angle) {
+        float wrapped = angle % FastMath.TWO_PI;
+        if (wrapped > FastMath.PI) {
+            wrapped -= FastMath.TWO_PI;
+        } else if (wrapped < -FastMath.PI) {
+            wrapped += FastMath.TWO_PI;
+        }
+        return wrapped;
     }
 
     private void publishHeadTurnRequested(String binding, float value, float tpf) {

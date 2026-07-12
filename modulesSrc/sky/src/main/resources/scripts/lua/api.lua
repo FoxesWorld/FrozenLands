@@ -1,4 +1,6 @@
 -- FrozenLands Lua API: engine.sky
+-- Weather semantics belong to engine.weather; engine.sky exposes only the
+-- low-level preset adapter retained for renderer integration.
 
 local M = {
   id = "engine.sky",
@@ -6,6 +8,8 @@ local M = {
     "status",
     "command.execute",
     "atmosphere.setGradient",
+    "preset.set",
+    "preset.list",
     "weather.set",
     "weather.list",
     "clock.setTime",
@@ -36,19 +40,24 @@ function M.atmosphere.setGradient(style, seconds)
   return M.call("atmosphere.setGradient", { style = style, seconds = seconds or 0 })
 end
 
-M.weather = {}
+M.preset = {}
 
-function M.weather.set(id, seconds)
-  local args = { id = id }
+function M.preset.set(id, seconds)
+  local args = { preset = id }
   if seconds ~= nil then
     args.seconds = seconds
   end
-  return M.call("weather.set", args)
+  return M.call("preset.set", args)
 end
 
-function M.weather.list()
-  return M.call("weather.list", {})
+function M.preset.list()
+  return M.call("preset.list", {})
 end
+
+-- Compatibility aliases. New gameplay scripts should require engine.weather.
+M.weather = {}
+M.weather.set = M.preset.set
+M.weather.list = M.preset.list
 
 M.clock = {}
 

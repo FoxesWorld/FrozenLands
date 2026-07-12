@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.takesome.frozenlands.engine.EngineContext;
 import org.takesome.frozenlands.engine.assets.AssetLibrary;
+import org.takesome.frozenlands.engine.events.EngineEventBus;
 import org.takesome.frozenlands.engine.modules.ModuleRegistry;
 import org.takesome.frozenlands.engine.providers.ProviderRegistry;
 import org.takesome.frozenlands.engine.services.EngineServicePool;
@@ -44,6 +45,7 @@ final class WeatherTestContext implements EngineContext {
     @Override public InputManager getInputManager() { return null; }
     @Override public Camera getCamera() { return null; }
     @Override public Logger getLogger() { return logger; }
+    @Override public EngineEventBus getEventBus() { return engineEvents; }
     @Override public BulletAppState getBulletAppState() { return null; }
     @Override public ProviderRegistry getProviderRegistry() { return providers; }
     @Override public ModuleRegistry getModuleRegistry() { return modules; }

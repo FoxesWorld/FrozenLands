@@ -60,12 +60,18 @@ distributions {
                 into '.'
             }
 
-            from(rootProject.file('modulesSrc')) {
-                into 'modulesSrc'
-                includeEmptyDirs = false
-                include '**/module.index.json'
-                include '**/src/main/resources/**'
-            }
+            def modulesSrcRoot = rootProject.file('modulesSrc')
+            modulesSrcRoot.listFiles()
+                    .findAll { moduleDir -> moduleDir.isDirectory() }
+                    .sort { left, right -> left.name <=> right.name }
+                    .each { moduleDir ->
+                        from(moduleDir) {
+                            into "modulesSrc/${moduleDir.name}"
+                            includeEmptyDirs = false
+                            include 'module.index.json'
+                            include 'src/main/resources/**'
+                        }
+                    }
 
             from(rootProject.projectDir) {
                 include '*.dll'

@@ -45,8 +45,10 @@ public final class SkyRuntimeModule implements EngineModule {
         commands.put("status", ModuleCommand.of("status", "Return sky runtime status", args -> sky.status()));
         commands.put("command.execute", ModuleCommand.of("command.execute", "Execute a canonical SkySimulation command id", this::executeRaw));
         commands.put("atmosphere.setGradient", ModuleCommand.of("atmosphere.setGradient", "Start an atmosphere gradient transition", this::setGradient));
-        commands.put("weather.set", ModuleCommand.of("weather.set", "Start a weather transition", this::setWeather));
-        commands.put("weather.list", ModuleCommand.of("weather.list", "List available sky weather presets", args -> sky.executeCommand(SkyCommandIds.weatherList)));
+        commands.put("preset.set", ModuleCommand.of("preset.set", "Apply a low-level sky preset for engine.weather.", this::setWeather));
+        commands.put("preset.list", ModuleCommand.of("preset.list", "List low-level sky presets for engine.weather.", args -> sky.executeCommand(SkyCommandIds.weatherList)));
+        commands.put("weather.set", ModuleCommand.of("weather.set", "Compatibility alias; use engine.weather.preset.set.", this::setWeather));
+        commands.put("weather.list", ModuleCommand.of("weather.list", "Compatibility alias; use engine.weather.preset.list.", args -> sky.executeCommand(SkyCommandIds.weatherList)));
         commands.put("clock.setTime", ModuleCommand.of("clock.setTime", "Set time of day in hours", this::setClockTime));
         commands.put("environment.snapshot", ModuleCommand.of("environment.snapshot", "Return sky environment snapshot", args -> sky.executeCommand(SkyCommandIds.environmentSnapshot)));
     }
@@ -64,7 +66,7 @@ public final class SkyRuntimeModule implements EngineModule {
     }
 
     private Map<String, Object> setWeather(Map<String, Object> args) {
-        String weatherId = stringArg(args, "weather", "preset", "id", "style");
+        String weatherId = stringArg(args, "preset", "weather", "id", "style");
         String seconds = optionalStringArg(args, null, "seconds", "duration", "durationSeconds");
         return seconds == null
                 ? sky.executeCommand(SkyCommandIds.weatherSet, weatherId)

@@ -6,6 +6,8 @@ local M = {
   commands = {
     "snapshot",
     "save",
+    "overwrite",
+    "delete",
     "load",
     "list"
   }

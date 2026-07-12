@@ -28,7 +28,7 @@ public final class TerrainModule implements EngineModule {
 
     @Override
     public String description() {
-        return "Terrain, chunk and terrain-asset runtime control";
+        return "Terrain, chunks and congruent map-entity placement control";
     }
 
     @Override
@@ -37,14 +37,49 @@ public final class TerrainModule implements EngineModule {
     }
 
     private void registerCommands() {
-        commands.put("status", ModuleCommand.of("status", "Return terrain/chunk status", args -> terrainManager.status()));
-        commands.put("settings", ModuleCommand.of("settings", "Return terrain runtime settings", args -> terrainManager.settingsSnapshot()));
-        commands.put("placementGroups", ModuleCommand.of("placementGroups", "Return terrain asset placement groups", args -> result("groups", terrainManager.placementGroups())));
-        commands.put("validatePlacement", ModuleCommand.of("validatePlacement", "Validate terrain asset footprint at x/z", terrainManager::validatePlacement));
-        commands.put("chunks", ModuleCommand.of("chunks", "Return terrain chunk snapshots", args -> result("chunks", terrainManager.getChunkTracker().snapshotMaps())));
-        commands.put("heightAt", ModuleCommand.of("heightAt", "Return terrain height at x/z", this::heightAt));
-        commands.put("sample", ModuleCommand.of("sample", "Return gameplay terrain sample at x/z", this::sample));
-        commands.put("spawnLocation", ModuleCommand.of("spawnLocation", "Resolve safe terrain spawn location", this::spawnLocation));
+        commands.put("status", ModuleCommand.of(
+                "status",
+                "Return terrain/chunk status",
+                args -> terrainManager.status()
+        ));
+        commands.put("settings", ModuleCommand.of(
+                "settings",
+                "Return terrain runtime settings",
+                args -> terrainManager.settingsSnapshot()
+        ));
+        commands.put("placementGroups", ModuleCommand.of(
+                "placementGroups",
+                "Return data-driven map-entity placement groups",
+                args -> result("groups", terrainManager.placementGroups())
+        ));
+        commands.put("validatePlacement", ModuleCommand.of(
+                "validatePlacement",
+                "Score footprint congruence and return a grounded transform",
+                terrainManager::validatePlacement
+        ));
+        commands.put("chunks", ModuleCommand.of(
+                "chunks",
+                "Return terrain chunk snapshots",
+                args -> result(
+                        "chunks",
+                        terrainManager.getChunkTracker().snapshotMaps()
+                )
+        ));
+        commands.put("heightAt", ModuleCommand.of(
+                "heightAt",
+                "Return terrain height at x/z",
+                this::heightAt
+        ));
+        commands.put("sample", ModuleCommand.of(
+                "sample",
+                "Return gameplay terrain sample at x/z",
+                this::sample
+        ));
+        commands.put("spawnLocation", ModuleCommand.of(
+                "spawnLocation",
+                "Resolve safe terrain spawn location",
+                this::spawnLocation
+        ));
     }
 
     private Map<String, Object> heightAt(Map<String, Object> args) {
@@ -59,7 +94,8 @@ public final class TerrainModule implements EngineModule {
     private Map<String, Object> sample(Map<String, Object> args) {
         float x = RuntimeMaps.floating(args, "x", 0f);
         float z = RuntimeMaps.floating(args, "z", 0f);
-        Optional<Map<String, Object>> sample = terrainManager.sampleGameplayTerrain(x, z);
+        Optional<Map<String, Object>> sample
+                = terrainManager.sampleGameplayTerrain(x, z);
         Map<String, Object> result = result("ready", sample.isPresent());
         sample.ifPresent(value -> result.put("sample", value));
         return result;
@@ -69,7 +105,11 @@ public final class TerrainModule implements EngineModule {
         float x = RuntimeMaps.floating(args, "x", 0f);
         float z = RuntimeMaps.floating(args, "z", 0f);
         float clearance = RuntimeMaps.floating(args, "clearance", 4f);
-        Optional<Vector3f> location = terrainManager.findSafeSpawnLocation(x, z, clearance);
+        Optional<Vector3f> location = terrainManager.findSafeSpawnLocation(
+                x,
+                z,
+                clearance
+        );
         Map<String, Object> result = result("ready", location.isPresent());
         location.ifPresent(vector -> {
             result.put("x", vector.x);

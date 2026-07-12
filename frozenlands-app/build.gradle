@@ -12,7 +12,7 @@ plugins {
  */
 dependencies {
     implementation project(':core')
-    implementation 'dev.takesome:html-dom-aio:1.0.22'
+    implementation 'dev.takesome:html-dom-aio:1.0.28'
 
     runtimeOnly project(':bootstrap')
     runtimeOnly project(':ico-parser')

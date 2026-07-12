@@ -11,6 +11,7 @@ import com.jme3.scene.Node;
 import org.slf4j.Logger;
 import org.takesome.frozenlands.engine.EngineContext;
 import org.takesome.frozenlands.engine.assets.AssetLibrary;
+import org.takesome.frozenlands.engine.events.EngineEventTopics;
 import org.takesome.frozenlands.engine.player.camera.PlayerCameraRig;
 import org.takesome.frozenlands.engine.player.input.FPSViewControl;
 import org.takesome.frozenlands.engine.player.input.UserInputHandler;
@@ -24,6 +25,7 @@ public class Player extends Node {
     private final EngineContext kernelInterface;
     private final PhysicsSpace pspace;
     private final PlayerOptions playerOptions;
+    private final int maximumHealth;
     private final PlayerRuntimeSettings runtimeSettings;
     private final PlayerLocomotionState locomotionState = new PlayerLocomotionState();
     private final PlayerSoundProvider playerSoundProvider;
@@ -32,6 +34,8 @@ public class Player extends Node {
     private UserInputHandler userInputHandler;
     private PlayerCameraRig cameraRig;
     private PlayerAnimationController animationController;
+    private PlayerFacialAnimationController facialAnimationController;
+    private PlayerFirstPersonVisualController firstPersonVisualController;
     private PlayerHeadTurnController headTurnController;
     private PlayerToolController toolController;
     private ActionsControl actionsControl;
@@ -41,6 +45,7 @@ public class Player extends Node {
         this.kernelInterface = kernel;
         this.pspace = kernel.getBulletAppState().getPhysicsSpace();
         this.playerOptions = PlayerOptions.load(ModuleIndexCatalog.defaultCatalog().configPath(PlayerModule.ID, "playerOptions"));
+        this.maximumHealth = Math.max(1, playerOptions.getInitialHealth());
         this.runtimeSettings = new PlayerRuntimeSettings();
         this.playerSoundProvider = new PlayerSoundProvider(kernel);
         this.playerModel = new PlayerModel(kernel.assets(), playerOptions);
@@ -138,10 +143,14 @@ public class Player extends Node {
         setPlayerHealth(playerOptions.getInitialHealth());
         addControl(userInputHandler);
         cameraRig = new PlayerCameraRig(this, cam, kernelInterface);
+        firstPersonVisualController = new PlayerFirstPersonVisualController(this);
+        addControl(firstPersonVisualController);
         toolController = new PlayerToolController(this);
         addControl(toolController);
         animationController = new PlayerAnimationController(this);
         addControl(animationController);
+        facialAnimationController = new PlayerFacialAnimationController(this);
+        addControl(facialAnimationController);
         addControl(new PlayerFootstepSystem(this));
         headTurnController = new PlayerHeadTurnController(this);
         playerModel.getPlayerSpatial().addControl(headTurnController);
@@ -208,6 +217,8 @@ public class Player extends Node {
     public UserInputHandler getUserInputHandler() { return userInputHandler; }
     public PlayerCameraRig getCameraRig() { return cameraRig; }
     public PlayerAnimationController getAnimationController() { return animationController; }
+    public PlayerFacialAnimationController getFacialAnimationController() { return facialAnimationController; }
+    public PlayerFirstPersonVisualController getFirstPersonVisualController() { return firstPersonVisualController; }
     public PlayerHeadTurnController getHeadTurnController() { return headTurnController; }
     public PlayerToolController getToolController() { return toolController; }
     public AssetManager getAssetManager() { return kernelInterface.getAssetManager(); }
@@ -229,7 +240,78 @@ public class Player extends Node {
         locomotionState.update(state, walkDirection, velocity, onGround, running, currentSpeed);
     }
 
+    public int getPlayerHealth() {
+        return playerOptions.getInitialHealth();
+    }
+
+    public int getMaximumHealth() {
+        return maximumHealth;
+    }
+
     public void setPlayerHealth(int health) {
-        playerOptions.setInitialHealth(health);
+        int previous = playerOptions.getInitialHealth();
+        int next = Math.max(0, Math.min(maximumHealth, health));
+        playerOptions.setInitialHealth(next);
+
+        float ratio = next / (float) maximumHealth;
+        publishEvent(EngineEventTopics.PLAYER_HEALTH_CHANGED, Map.of(
+                "playerRef", runtimeId(),
+                "previousHealth", previous,
+                "health", next,
+                "maximumHealth", maximumHealth,
+                "delta", next - previous,
+                "ratio", ratio
+        ));
+        if (next < previous) {
+            publishEvent(EngineEventTopics.PLAYER_DAMAGE_TAKEN, Map.of(
+                    "playerRef", runtimeId(),
+                    "previousHealth", previous,
+                    "health", next,
+                    "maximumHealth", maximumHealth,
+                    "amount", previous - next,
+                    "ratio", ratio
+            ));
+        }
+    }
+
+    public void damagePlayer(int damage) {
+        if (damage > 0) {
+            setPlayerHealth(getPlayerHealth() - damage);
+        }
+    }
+
+    public void healPlayer(int healing) {
+        if (healing > 0) {
+            setPlayerHealth(getPlayerHealth() + healing);
+        }
+    }
+
+    public void setPlayerSpeaking(boolean speaking) {
+        publishEvent(
+                speaking ? EngineEventTopics.PLAYER_SPEECH_STARTED : EngineEventTopics.PLAYER_SPEECH_STOPPED,
+                Map.of("playerRef", runtimeId())
+        );
+    }
+
+    public void requestFacialProfile(String profile) {
+        publishEvent(EngineEventTopics.PLAYER_FACIAL_PROFILE_REQUESTED, Map.of(
+                "playerRef", runtimeId(),
+                "profile", profile == null ? "AUTO" : profile
+        ));
+    }
+
+    public void requestFacialExpression(String clipName, float holdSeconds) {
+        publishEvent(EngineEventTopics.PLAYER_FACIAL_EXPRESSION_REQUESTED, Map.of(
+                "playerRef", runtimeId(),
+                "clip", clipName == null ? "" : clipName,
+                "holdSeconds", Math.max(0f, holdSeconds)
+        ));
+    }
+
+    public void requestFacialPhonemes(String clipName) {
+        publishEvent(EngineEventTopics.PLAYER_FACIAL_PHONEME_REQUESTED, Map.of(
+                "playerRef", runtimeId(),
+                "clip", clipName == null ? "face_phonemes_neutral" : clipName
+        ));
     }
 }

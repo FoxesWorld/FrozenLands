@@ -1,6 +1,7 @@
 package org.takesome.frozenlands.engine.modules;
 
 import org.takesome.frozenlands.engine.EngineContext;
+import org.takesome.frozenlands.engine.events.EngineEventBus;
 import org.takesome.frozenlands.engine.runtime.EngineRuntimeOptions;
 
 import java.util.ArrayList;
@@ -12,7 +13,15 @@ import java.util.Optional;
 
 public final class ModuleRegistry {
     private final Map<String, EngineModule> modulesById = new LinkedHashMap<>();
-    private final ModuleEventBus eventBus = new ModuleEventBus();
+    private final ModuleEventBus eventBus;
+
+    public ModuleRegistry() {
+        this(new EngineEventBus("module", EngineRuntimeOptions.defaultOptions().eventHistoryLimit("module")));
+    }
+
+    public ModuleRegistry(EngineEventBus eventBus) {
+        this.eventBus = new ModuleEventBus(eventBus);
+    }
 
     public EngineModule register(EngineModule module, EngineContext context) {
         if (module == null) {

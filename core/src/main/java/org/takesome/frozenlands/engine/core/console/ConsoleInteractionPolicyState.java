@@ -5,11 +5,21 @@ import com.jme3.app.state.BaseAppState;
 import org.takesome.frozenlands.engine.EngineContext;
 import org.takesome.frozenlands.engine.events.EngineEventTopics;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Converts console visibility into authoritative interaction-gate requests.
+ *
+ * <p>The player module also consumes the visibility event directly as a hard
+ * gate, so later focus/menu enable requests cannot override an open console.</p>
+ */
 public final class ConsoleInteractionPolicyState extends BaseAppState {
+    private static final String EMITTER = "engine.core.console";
+
     private final EngineContext context;
     private AutoCloseable subscription;
+    private boolean consoleOpen;
 
     public ConsoleInteractionPolicyState(EngineContext context) {
         this.context = context;
@@ -22,11 +32,18 @@ public final class ConsoleInteractionPolicyState extends BaseAppState {
                 this::onConsoleVisibilityChanged,
                 true
         );
-        publishInteractionState(false);
+        if (context.getModuleRegistry().getEventBus()
+                .latest(EngineEventTopics.CONSOLE_VISIBILITY_CHANGED)
+                .isEmpty()) {
+            publishInteractionState(false, "policy-initialized");
+        }
     }
 
     @Override
     protected void cleanup(Application application) {
+        if (consoleOpen) {
+            publishInteractionState(false, "policy-cleanup");
+        }
         close(subscription);
     }
 
@@ -34,14 +51,55 @@ public final class ConsoleInteractionPolicyState extends BaseAppState {
     @Override protected void onDisable() { }
 
     private void onConsoleVisibilityChanged(Map<String, Object> event) {
-        publishInteractionState(booleanPayload(event, "open"));
+        publishInteractionState(booleanPayload(event, "open"), "console-visibility");
     }
 
-    private void publishInteractionState(boolean open) {
-        context.getModuleRegistry().publishEvent(EngineEventTopics.CURSOR_VISIBILITY_REQUESTED, Map.of("visible", open));
-        context.getModuleRegistry().publishEvent(EngineEventTopics.CAMERA_FOLLOW_PAUSE_REQUESTED, Map.of("paused", open));
-        context.getModuleRegistry().publishEvent(EngineEventTopics.CAMERA_LOOK_INPUT_ENABLED_REQUESTED, Map.of("enabled", !open));
-        context.getModuleRegistry().publishEvent(EngineEventTopics.PLAYER_INPUT_ENABLED_REQUESTED, Map.of("enabled", !open));
+    private void publishInteractionState(boolean open, String reason) {
+        consoleOpen = open;
+        Map<String, Object> metadata = Map.of(
+                "policy", "console",
+                "reason", reason
+        );
+        context.getModuleRegistry().publishEvent(
+                EngineEventTopics.CURSOR_VISIBILITY_REQUESTED,
+                Map.of("visible", open, "source", "console"),
+                EMITTER,
+                metadata
+        );
+        context.getModuleRegistry().publishEvent(
+                EngineEventTopics.CAMERA_FOLLOW_PAUSE_REQUESTED,
+                Map.of("paused", open, "source", "console"),
+                EMITTER,
+                metadata
+        );
+        context.getModuleRegistry().publishEvent(
+                EngineEventTopics.CAMERA_LOOK_INPUT_ENABLED_REQUESTED,
+                Map.of("enabled", !open, "source", "console"),
+                EMITTER,
+                metadata
+        );
+        context.getModuleRegistry().publishEvent(
+                EngineEventTopics.PLAYER_INPUT_ENABLED_REQUESTED,
+                Map.of("enabled", !open, "source", "console"),
+                EMITTER,
+                metadata
+        );
+
+        Map<String, Object> capture = new LinkedHashMap<>();
+        capture.put("open", open);
+        capture.put("inputBlocked", open);
+        capture.put("mouseBlocked", open);
+        capture.put("keyboardCaptured", open);
+        capture.put("playerInputEnabled", !open);
+        capture.put("cameraLookEnabled", !open);
+        capture.put("cursorVisible", open);
+        capture.put("reason", reason);
+        context.getModuleRegistry().publishEvent(
+                EngineEventTopics.CONSOLE_INPUT_CAPTURE_CHANGED,
+                capture,
+                EMITTER,
+                metadata
+        );
     }
 
     private boolean booleanPayload(Map<String, Object> event, String key) {

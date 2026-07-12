@@ -63,6 +63,16 @@
       "inputName": "Rotate_Down",
       "inputKey": 1,
       "negative": true
+    },
+    {
+      "inputName": "Zoom_In",
+      "inputKey": 2,
+      "negative": false
+    },
+    {
+      "inputName": "Zoom_Out",
+      "inputKey": 2,
+      "negative": true
     }
   ]
 }

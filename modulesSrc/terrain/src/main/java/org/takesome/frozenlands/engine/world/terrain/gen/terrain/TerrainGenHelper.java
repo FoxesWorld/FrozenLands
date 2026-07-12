@@ -2,7 +2,6 @@ package org.takesome.frozenlands.engine.world.terrain.gen.terrain;
 
 import com.jme3.bullet.collision.shapes.CollisionShape;
 import com.jme3.bullet.collision.shapes.HeightfieldCollisionShape;
-import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
@@ -92,20 +91,28 @@ public class TerrainGenHelper {
             kernelInterface.getBulletAppState().getPhysicsSpace().remove(existingControl);
             quad.removeControl(RigidBodyControl.class);
         }
-        CollisionShape shape = createTerrainCollisionShape(quad);
+
+        quad.updateGeometricState();
+        Vector3f collisionScale = resolveCollisionScale(quad);
+        CollisionShape shape = createTerrainCollisionShape(quad, collisionScale);
         RigidBodyControl control = new RigidBodyControl(shape, 0);
+        control.setApplyScale(false);
         quad.addControl(control);
         kernelInterface.getBulletAppState().getPhysicsSpace().add(control);
         chunkTracker.tileCollisionInstalled(cell, quad);
+
         if (settings.terrainCollisionLogReady()) {
             kernelInterface.getLogger().info(
-                    "Terrain collision ready mode={} reason={} quad={} cell={} world={} scale={} samples={}",
+                    "Terrain collision ready mode={} reason={} quad={} cell={} world={} localScale={} worldScale={} collisionScale={} physics={} samples={}",
                     settings.terrainCollisionMode(),
                     reason,
                     quad.getName(),
                     cell,
                     quad.getWorldTranslation(),
-                    terrain.getLocalScale(),
+                    quad.getLocalScale(),
+                    quad.getWorldScale(),
+                    collisionScale,
+                    control.getPhysicsLocation(null),
                     quad.getHeightMap() == null ? 0 : quad.getHeightMap().length
             );
         }
@@ -113,11 +120,25 @@ public class TerrainGenHelper {
         publishTerrainEvent(settings.collisionReadyTopic(), cell, quad, reason);
     }
 
-    private CollisionShape createTerrainCollisionShape(TerrainQuad quad) {
-        if ("mesh".equals(settings.terrainCollisionMode())) {
-            return CollisionShapeFactory.createMeshShape(quad);
+    private CollisionShape createTerrainCollisionShape(TerrainQuad quad, Vector3f collisionScale) {
+        // CollisionShapeFactory.createMeshShape(TerrainQuad) internally creates a
+        // HeightfieldCollisionShape with quad.getLocalScale(). TerrainGrid tiles
+        // inherit their scale from the grid, so their local scale is identity and
+        // that path leaves wide gaps between physics tiles. Build the heightfield
+        // explicitly with the resolved world scale instead.
+        return new HeightfieldCollisionShape(quad.getHeightMap(), collisionScale);
+    }
+
+    static Vector3f resolveCollisionScale(TerrainQuad quad) {
+        quad.updateGeometricState();
+        Vector3f worldScale = quad.getWorldScale();
+        if (worldScale.x <= 0f || worldScale.y <= 0f || worldScale.z <= 0f
+                || !Float.isFinite(worldScale.x)
+                || !Float.isFinite(worldScale.y)
+                || !Float.isFinite(worldScale.z)) {
+            throw new IllegalStateException("Invalid terrain collision scale: " + worldScale);
         }
-        return new HeightfieldCollisionShape(quad.getHeightMap(), terrain.getLocalScale());
+        return worldScale.clone();
     }
 
     private void publishTerrainEvent(String topic, Vector3f cell, TerrainQuad quad, String reason) {

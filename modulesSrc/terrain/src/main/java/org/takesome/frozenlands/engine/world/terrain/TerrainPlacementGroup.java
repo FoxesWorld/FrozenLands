@@ -21,6 +21,7 @@ public record TerrainPlacementGroup(
         float footprintPadding,
         float maxSurfaceDelta,
         float minSpacing,
+        TerrainPlacementCongruenceProfile congruence,
         boolean collisionEnabled,
         boolean collisionMesh,
         float proxyRadiusFactor,
@@ -49,6 +50,12 @@ public record TerrainPlacementGroup(
         footprintPadding = Math.max(0f, footprintPadding);
         maxSurfaceDelta = Math.max(0f, maxSurfaceDelta);
         minSpacing = Math.max(0f, minSpacing);
+        congruence = congruence == null
+                ? TerrainPlacementCongruenceProfile.defaults(
+                        maxSurfaceDelta,
+                        minSpacing
+                )
+                : congruence;
         proxyRadiusFactor = Math.max(0f, proxyRadiusFactor);
         proxyRadiusMin = Math.max(0.01f, proxyRadiusMin);
         proxyRadiusMax = Math.max(proxyRadiusMin, proxyRadiusMax);
@@ -75,6 +82,7 @@ public record TerrainPlacementGroup(
                 "maxSurfaceDelta", maxSurfaceDelta,
                 "minSpacing", minSpacing
         ));
+        result.put("congruence", congruence.toMap());
         result.put("collision", Map.of(
                 "enabled", collisionEnabled,
                 "mesh", collisionMesh,

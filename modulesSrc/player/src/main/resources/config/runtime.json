@@ -1,10 +1,11 @@
 {
   "movement": {
-    "walkSpeed": 4.0,
-    "runSpeed": 8.0,
-    "maxSmoothSpeedChange": 2.0
+    "walkSpeed": 3.2,
+    "runSpeed": 6.2,
+    "maxSmoothSpeedChange": 6.0
   },
   "look": {
+    "rotationMultiplier": 0.075,
     "walkingRotationMultiplier": 0.04,
     "runningRotationMultiplier": 0.1,
     "minPitch": -0.85,
@@ -32,7 +33,7 @@
     "eventsEnabled": true
   },
   "tool": {
-    "enabled": true,
+    "enabled": false,
     "model": "frozenlands.tools.axe",
     "scale": 0.45,
     "forwardOffset": 1.05,
@@ -51,7 +52,7 @@
     "hitSoundEnabled": true,
     "attachToHand": false,
     "handFallbackToCamera": true,
-    "handJoint": "Ellie_Arm_R_Hand_Palm",
+    "handJoint": "Sarah_Arm_R_Hand_Palm",
     "handOffsetX": 0.03,
     "handOffsetY": 0.02,
     "handOffsetZ": 0.06,
@@ -93,10 +94,19 @@
     }
   },
   "skeleton": {
-    "chestNode": "Ellie_Core_Chest",
-    "neckNode": "Ellie_Core_Neck",
-    "headNode": "Ellie_Core_Head",
-    "rightHandNode": "Ellie_Arm_R_Hand_Palm",
-    "leftHandNode": "Ellie_Arm_L_Hand_Palm"
+    "chestNode": "Sarah_Core_Chest",
+    "neckNode": "Sarah_Core_Neck",
+    "headNode": "Sarah_Core_Head",
+    "rightHandNode": "Sarah_Arm_R_Hand_Palm",
+    "leftHandNode": "Sarah_Arm_L_Hand_Palm"
+  },
+  "fpsVisual": {
+    "hideCameraHead": false,
+    "hiddenNameTokens": [
+      "head",
+      "hair",
+      "eye",
+      "eyelash"
+    ]
   }
 }

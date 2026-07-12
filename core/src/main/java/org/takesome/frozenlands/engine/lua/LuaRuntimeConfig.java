@@ -1,14 +1,20 @@
 package org.takesome.frozenlands.engine.lua;
 
+import org.takesome.frozenlands.engine.config.RuntimeConfigStore;
 import org.takesome.frozenlands.engine.resources.ModuleIndexCatalog;
 import org.takesome.frozenlands.engine.runtime.RuntimeMaps;
 
 import java.util.Map;
 
 public final class LuaRuntimeConfig {
+    private static final String CORE_MODULE_ID = "engine.core";
+
     private final ModuleIndexCatalog moduleIndexCatalog = ModuleIndexCatalog.defaultCatalog();
 
     public Map<String, Object> read(String moduleId) {
+        if (CORE_MODULE_ID.equals(moduleId)) {
+            return RuntimeConfigStore.core(moduleIndexCatalog).readMap();
+        }
         String indexedPath = moduleIndexCatalog.optionalConfigPath(moduleId, "runtime");
         return indexedPath == null ? Map.of() : moduleIndexCatalog.readJsonMap(indexedPath);
     }

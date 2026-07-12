@@ -9,6 +9,7 @@
     "terrainReadyMode": "physics_collision",
     "terrainReadyEvent": "terrain.collision.ready",
     "spawnOnTerrainReadyEvent": true,
-    "replayTerrainReadyEvent": true
+    "replayTerrainReadyEvent": true,
+    "autoSpawn": false
   }
 }

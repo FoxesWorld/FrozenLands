@@ -5,6 +5,7 @@ import org.takesome.frozenlands.engine.lua.LuaProviderBridge;
 import org.takesome.frozenlands.engine.core.console.CoreConsole;
 import org.takesome.frozenlands.engine.modules.EngineModule;
 import org.takesome.frozenlands.engine.modules.ModuleCommand;
+import org.takesome.frozenlands.engine.operations.EngineOperationCoordinator;
 import org.takesome.frozenlands.engine.runtime.RuntimeMaps;
 
 import java.util.ArrayList;
@@ -82,6 +83,9 @@ public final class CoreModule implements EngineModule {
         commands.put("task.cancel", ModuleCommand.of("task.cancel", "Cancel one engine task", this::taskCancel));
         commands.put("service.pool.status", ModuleCommand.of("service.pool.status", "Return engine service pool status", args -> context.getServicePool().status()));
         commands.put("service.list", ModuleCommand.of("service.list", "List registered engine services", args -> RuntimeMaps.result("services", context.getServicePool().snapshot())));
+        new CoreOperationCommands(context).register(commands);
+        new CoreGameRuntimeCommands(context).register(commands);
+        new CoreUiScreenCommands(context).register(commands);
     }
 
     private Map<String, Object> status() {
@@ -90,6 +94,7 @@ public final class CoreModule implements EngineModule {
         status.put("providers", providerIds());
         status.put("scripting", scripts.manifest());
         status.put("services", context.getServicePool().status());
+        status.put("operations", context.requireService(EngineOperationCoordinator.class).status());
         return status;
     }
 
@@ -217,10 +222,6 @@ public final class CoreModule implements EngineModule {
     private List<String> providerIds() {
         return List.copyOf(context.getProviderRegistry().snapshot().keySet());
     }
-
-
-
-
 
     private boolean includeModuleEvents(String source) {
         return source == null || source.isBlank() || "all".equalsIgnoreCase(source) || "module".equalsIgnoreCase(source);

@@ -43,6 +43,8 @@ public final class PlayerModule implements EngineModule {
         commands.put("locomotion", ModuleCommand.of("locomotion", "Return active player locomotion state", args -> locomotion()));
         commands.put("tool.status", ModuleCommand.of("tool.status", "Return active player tool status", args -> toolStatus()));
         commands.put("feedback.status", ModuleCommand.of("feedback.status", "Return player feedback router status", args -> feedbackStatus()));
+        commands.put("input.sensitivity.status", ModuleCommand.of("input.sensitivity.status", "Return mouse sensitivity settings", args -> inputSensitivityStatus()));
+        commands.put("input.sensitivity.set", ModuleCommand.of("input.sensitivity.set", "Set active player mouse sensitivity", this::setInputSensitivity));
         commands.put("warp", ModuleCommand.of("warp", "Warp active player to coordinates", this::warp));
     }
 
@@ -79,6 +81,46 @@ public final class PlayerModule implements EngineModule {
         return context.findService(PlayerFeedbackRouter.class)
                 .map(PlayerFeedbackRouter::status)
                 .orElseGet(() -> RuntimeMaps.result("available", false));
+    }
+
+    private Map<String, Object> inputSensitivityStatus() {
+        Player player = player();
+        Map<String, Object> result = RuntimeMaps.result(
+                "available",
+                player != null
+        );
+        if (player == null) {
+            return result;
+        }
+        PlayerOptions options = player.getPlayerOptions();
+        result.put("sensitivity", options.getMouseSensitivity());
+        result.put("minimum", options.getMinMouseSensitivity());
+        result.put("maximum", options.getMaxMouseSensitivity());
+        return result;
+    }
+
+    private Map<String, Object> setInputSensitivity(
+            Map<String, Object> args
+    ) {
+        Player player = player();
+        Map<String, Object> result = RuntimeMaps.result(
+                "available",
+                player != null
+        );
+        if (player == null) {
+            return result;
+        }
+        PlayerOptions options = player.getPlayerOptions();
+        float requested = RuntimeMaps.floating(
+                args,
+                "sensitivity",
+                options.getMouseSensitivity()
+        );
+        float sensitivity = options.setMouseSensitivity(requested);
+        result.put("sensitivity", sensitivity);
+        result.put("minimum", options.getMinMouseSensitivity());
+        result.put("maximum", options.getMaxMouseSensitivity());
+        return result;
     }
 
     private Map<String, Object> warp(Map<String, Object> args) {

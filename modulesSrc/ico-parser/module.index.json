@@ -5,7 +5,7 @@
   "id": "engine.icoParser",
   "type": "runtime",
   "entrypoint": "org.takesome.frozenlands.engine.icons.IcoParserModule",
-  "description": "ICO parser module: decodes ICO files, inspects frames, and selects window icon sizes.",
+  "description": "Engine-owned ICO/app icon parser module: decodes ICO files, loads PNG/ICO app icons, selects window icon sizes, and exposes icon loader services.",
   "project": {
     "id": "takesome.frozenlands",
     "name": "Take Some() Frozen Lands",
@@ -17,12 +17,17 @@
   "lua": {
     "api": "src/main/resources/scripts/lua/api.lua",
     "events": "src/main/resources/scripts/lua/events.lua",
-    "usage": "local ico = require('engine.icoParser'); ico.call('inspect', { path = 'icon.ico' })"
+    "usage": "local ico = require('engine.icoParser'); ico.call('load', { reference = 'org/takesome/frozenlands/engine/ui/prelaunch/icon.png' })"
   },
   "runtime": {
     "configs": {},
     "assetRoots": [
       "src/main/resources"
     ]
-  }
+  },
+  "services": [
+    "org.takesome.frozenlands.engine.icons.IcoFileParser",
+    "org.takesome.frozenlands.engine.icons.EngineIconLoader",
+    "engine.icons.loader"
+  ]
 }

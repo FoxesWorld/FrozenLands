@@ -12,18 +12,21 @@ import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Node;
 import org.slf4j.Logger;
 import org.takesome.frozenlands.engine.assets.AssetLibrary;
-import org.takesome.frozenlands.FrozenLands;
 import org.takesome.frozenlands.engine.core.CoreModule;
 import org.takesome.frozenlands.engine.core.console.ConsoleCursorPolicyState;
 import org.takesome.frozenlands.engine.core.console.ConsoleInteractionPolicyState;
 import org.takesome.frozenlands.engine.core.console.CoreConsoleState;
+import org.takesome.frozenlands.engine.events.EngineEventBus;
 import org.takesome.frozenlands.engine.lua.RuntimeManifestReporter;
+import org.takesome.frozenlands.engine.lua.CoreLuaRuntimeState;
 import org.takesome.frozenlands.engine.modules.ModuleRegistry;
+import org.takesome.frozenlands.engine.operations.EngineOperationCoordinator;
 import org.takesome.frozenlands.engine.providers.ProviderRegistry;
 import org.takesome.frozenlands.engine.runtime.EngineRuntimeInstaller;
+import org.takesome.frozenlands.engine.runtime.GameRuntimeStartupController;
 import org.takesome.frozenlands.engine.services.EngineServicePool;
+import org.takesome.frozenlands.engine.shutdown.RuntimeShutdownState;
 import org.takesome.frozenlands.engine.tasks.EngineTaskPool;
-import org.takesome.frozenlands.engine.ui.html.HtmlUiState;
 
 import java.util.Comparator;
 import java.util.List;
@@ -32,7 +35,7 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 
 public class Kernel extends BaseAppState implements EngineContext {
-    private final FrozenLands frozenLands;
+    private final EngineApplicationHost frozenLands;
     private final Logger logger;
     private final Map CONFIG;
     private final ProviderRegistry providerRegistry;
@@ -41,14 +44,16 @@ public class Kernel extends BaseAppState implements EngineContext {
     private final CoreModule coreModule;
     private final EngineTaskPool taskPool;
     private final EngineServicePool servicePool;
+    private final EngineOperationCoordinator operationCoordinator;
     private final List<EngineRuntimeInstaller> runtimeInstallers;
+    private final GameRuntimeStartupController gameRuntime;
 
     private StartupPhase startupPhase = StartupPhase.RUNTIME_MODULES;
     private int runtimeInstallerIndex;
     private boolean runtimeInstallerAnnounced;
     private boolean startupComplete;
 
-    public Kernel(FrozenLands frozenLands) {
+    public Kernel(EngineApplicationHost frozenLands) {
         this.frozenLands = frozenLands;
         this.CONFIG = frozenLands.getCONFIG();
         this.logger = frozenLands.getLogger();
@@ -57,15 +62,23 @@ public class Kernel extends BaseAppState implements EngineContext {
         this.moduleRegistry = new ModuleRegistry();
         this.servicePool = new EngineServicePool(logger);
         this.taskPool = new EngineTaskPool(this);
+        this.operationCoordinator = new EngineOperationCoordinator(this);
         this.coreModule = new CoreModule(this);
+        this.gameRuntime = new GameRuntimeStartupController(this, operationCoordinator);
 
         frozenLands.reportStartupProgress("Preparing module registry", 0.54f);
+        registerService("core.events", EngineEventBus.class, frozenLands.getEventBus());
         registerService("core.providers", ProviderRegistry.class, providerRegistry);
         registerService("core.modules", ModuleRegistry.class, moduleRegistry);
         registerService("core.services", EngineServicePool.class, servicePool);
         registerService("core.tasks", EngineTaskPool.class, taskPool);
+        registerService("core.operations", EngineOperationCoordinator.class, operationCoordinator);
         moduleRegistry.register(coreModule, this);
         runtimeInstallers = discoverRuntimeInstallers();
+    }
+
+    public EngineApplicationHost applicationHost() {
+        return frozenLands;
     }
 
     public boolean continueStartup() {
@@ -117,41 +130,55 @@ public class Kernel extends BaseAppState implements EngineContext {
     }
 
     private void installNextRuntimeModuleStep() {
-        if (runtimeInstallers.isEmpty()) {
-            frozenLands.reportStartupProgress("No runtime modules discovered", 0.86f);
-            startupPhase = StartupPhase.CORE_STATES;
-            return;
-        }
-        if (runtimeInstallerIndex >= runtimeInstallers.size()) {
-            frozenLands.reportStartupProgress("Runtime modules ready", 0.86f);
-            startupPhase = StartupPhase.CORE_STATES;
+        while (runtimeInstallerIndex < runtimeInstallers.size()) {
+            EngineRuntimeInstaller installer = runtimeInstallers.get(runtimeInstallerIndex);
+            if (gameRuntime.shouldDefer(installer)) {
+                gameRuntime.defer(installer);
+                runtimeInstallerIndex++;
+                runtimeInstallerAnnounced = false;
+                continue;
+            }
+
+            float baseProgress = 0.58f;
+            float moduleProgressSpan = 0.28f;
+            float before = baseProgress + moduleProgressSpan * runtimeInstallerIndex / runtimeInstallers.size();
+            float after = baseProgress + moduleProgressSpan * (runtimeInstallerIndex + 1) / runtimeInstallers.size();
+
+            if (!runtimeInstallerAnnounced) {
+                frozenLands.reportStartupProgress("Loading menu module " + installer.id(), before);
+                runtimeInstallerAnnounced = true;
+                return;
+            }
+
+            logger.info("Installing FrozenLands menu runtime module: {} [{}]", installer.id(), installer.getClass().getName());
+            installer.install(this);
+            frozenLands.reportStartupProgress("Loaded menu module " + installer.id(), after);
+            runtimeInstallerIndex++;
+            runtimeInstallerAnnounced = false;
             return;
         }
 
-        EngineRuntimeInstaller installer = runtimeInstallers.get(runtimeInstallerIndex);
-        float baseProgress = 0.58f;
-        float moduleProgressSpan = 0.28f;
-        float before = baseProgress + moduleProgressSpan * runtimeInstallerIndex / runtimeInstallers.size();
-        float after = baseProgress + moduleProgressSpan * (runtimeInstallerIndex + 1) / runtimeInstallers.size();
-
-        if (!runtimeInstallerAnnounced) {
-            frozenLands.reportStartupProgress("Loading module " + installer.id(), before);
-            runtimeInstallerAnnounced = true;
-            return;
+        if (gameRuntime.hasDeferredInstallers()) {
+            logger.info("Game runtime modules deferred count={}", gameRuntime.deferredCount());
         }
+        frozenLands.reportStartupProgress("Menu runtime ready", 0.86f);
+        startupPhase = StartupPhase.CORE_STATES;
+    }
 
-        logger.info("Installing FrozenLands runtime module: {} [{}]", installer.id(), installer.getClass().getName());
-        installer.install(this);
-        frozenLands.reportStartupProgress("Loaded module " + installer.id(), after);
-        runtimeInstallerIndex++;
-        runtimeInstallerAnnounced = false;
+    public Map<String, Object> startGameRuntime(Map<String, Object> arguments) {
+        return gameRuntime.start(arguments);
+    }
+
+    public Map<String, Object> gameRuntimeStatus() {
+        return gameRuntime.status();
     }
 
     private void attachCoreAppStates() {
+        appStateManager().attach(new CoreLuaRuntimeState(this));
+        appStateManager().attach(new RuntimeShutdownState(this));
         appStateManager().attach(new ConsoleInteractionPolicyState(this));
         appStateManager().attach(new ConsoleCursorPolicyState(this));
         appStateManager().attach(new CoreConsoleState(this));
-        appStateManager().attach(new HtmlUiState(this));
     }
 
     private void runCoreAutoRunScripts() {
@@ -171,6 +198,7 @@ public class Kernel extends BaseAppState implements EngineContext {
 
     @Override
     protected void cleanup(Application application) {
+        gameRuntime.close();
         taskPool.close();
     }
 
@@ -184,6 +212,7 @@ public class Kernel extends BaseAppState implements EngineContext {
 
     @Override
     public void update(float tpf) {
+        gameRuntime.update();
     }
 
     @Override
@@ -229,6 +258,11 @@ public class Kernel extends BaseAppState implements EngineContext {
     @Override
     public Logger getLogger() {
         return logger;
+    }
+
+    @Override
+    public EngineEventBus getEventBus() {
+        return frozenLands.getEventBus();
     }
 
     @Override

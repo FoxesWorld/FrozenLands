@@ -94,6 +94,9 @@ public final class PlayerManager extends BaseAppState {
             status.put("y", position.y);
             status.put("z", position.z);
             status.put("locomotion", activePlayer.getLocomotionState().toMap(activePlayer.runtimeId()));
+            if (activePlayer.getCameraRig() != null) {
+                status.put("camera", activePlayer.getCameraRig().status());
+            }
         }
         return status;
     }

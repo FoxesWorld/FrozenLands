@@ -19,6 +19,7 @@ import jme3utilities.sky.Updater;
 import jme3utilities.sky.command.SkyCommandBus;
 import jme3utilities.sky.command.SkyCommandResult;
 import jme3utilities.sky.runtime.SkyEnvironmentSnapshot;
+import jme3utilities.sky.runtime.SkyLightingSnapshot;
 import org.slf4j.Logger;
 import org.takesome.frozenlands.engine.EngineContext;
 
@@ -90,6 +91,169 @@ public class Sky {
         return this.sun;
     }
 
+    /**
+     * Copy the current world-space direction from the camera toward the visual sun.
+     * This is the authoritative solar direction used by the sky dome.
+     *
+     * @param storeResult optional storage vector
+     * @return a normalized direction vector
+     */
+    public Vector3f getDirectionToSun(Vector3f storeResult) {
+        if (skyControl == null) {
+            throw new IllegalStateException("SkyControl is not initialized");
+        }
+        Vector3f result = storeResult == null ? new Vector3f() : storeResult;
+        skyControl.getSunAndStars().sunDirection(result);
+        if (result.lengthSquared() == 0f) {
+            throw new IllegalStateException("SkyControl returned a zero sun direction");
+        }
+        return result.normalizeLocal();
+    }
+
+    /**
+     * Copy the current world-space up direction used by the astronomical model.
+     *
+     * @param storeResult optional storage vector
+     * @return a normalized up vector
+     */
+    public Vector3f getUpDirection(Vector3f storeResult) {
+        if (skyControl == null) {
+            throw new IllegalStateException("SkyControl is not initialized");
+        }
+        Vector3f result = storeResult == null ? new Vector3f() : storeResult;
+        skyControl.getSunAndStars().upDirection(result);
+        if (result.lengthSquared() == 0f) {
+            throw new IllegalStateException("SkyControl returned a zero up direction");
+        }
+        return result.normalizeLocal();
+    }
+
+    /**
+     * Calculate a camera-relative world position for screen-space solar effects.
+     * The point remains on the same ray as the visual sun while the camera moves.
+     *
+     * @param distance positive distance from the camera
+     * @param storeResult optional storage vector
+     * @return the world-space sun point
+     */
+    public Vector3f getSunWorldPosition(float distance, Vector3f storeResult) {
+        if (!Float.isFinite(distance) || distance <= 0f) {
+            throw new IllegalArgumentException("distance must be finite and positive");
+        }
+        Vector3f result = getDirectionToSun(storeResult);
+        result.multLocal(distance);
+        result.addLocal(camera.getLocation());
+        return result;
+    }
+
+    /**
+     * Copy the current world-space direction from the camera toward the visual moon.
+     *
+     * @param storeResult optional storage vector
+     * @return a normalized direction vector
+     */
+    public Vector3f getDirectionToMoon(Vector3f storeResult) {
+        requireSkyControl();
+        Vector3f result = storeResult == null ? new Vector3f() : storeResult;
+        skyControl.moonDirection(result);
+        if (result.lengthSquared() < 1e-8f) {
+            throw new IllegalStateException("SkyControl returned a zero moon direction");
+        }
+        return result.normalizeLocal();
+    }
+
+    /**
+     * Copy the propagation direction of the active celestial directional light.
+     * This is the exact direction applied by SkyControl's Updater to the main
+     * DirectionalLight. It can represent the sun, moon, or night/starlight source.
+     *
+     * @param storeResult optional storage vector
+     * @return normalized light-ray propagation direction
+     */
+    public Vector3f getPrimaryLightPropagationDirection(Vector3f storeResult) {
+        requireSkyControl();
+        Vector3f result = storeResult == null ? new Vector3f() : storeResult;
+        SkyLightingSnapshot snapshot = skyControl.lightingSnapshot();
+        if (snapshot != null) {
+            // SkyLightingSnapshot.mainDirection() points toward the source.
+            // DirectionalLight and CSM renderers require ray propagation.
+            snapshot.mainDirection(result).negateLocal();
+        }
+        if (result.lengthSquared() < 1e-8f) {
+            getDirectionToSun(result).negateLocal();
+        }
+        return result.normalizeLocal();
+    }
+
+    /**
+     * Copy the direction from the camera toward the active celestial source.
+     *
+     * @param storeResult optional storage vector
+     * @return normalized direction toward the selected source
+     */
+    public Vector3f getDirectionToPrimaryLight(Vector3f storeResult) {
+        return getPrimaryLightPropagationDirection(storeResult).negateLocal();
+    }
+
+    /**
+     * Calculate a camera-relative world position for the active celestial source.
+     * This is suitable for screen-space shafts and other source-position effects.
+     *
+     * @param distance positive distance from the camera
+     * @param storeResult optional storage vector
+     * @return camera-relative source position
+     */
+    public Vector3f getPrimaryLightWorldPosition(float distance, Vector3f storeResult) {
+        if (!Float.isFinite(distance) || distance <= 0f) {
+            throw new IllegalArgumentException("distance must be finite and positive");
+        }
+        Vector3f result = getDirectionToPrimaryLight(storeResult);
+        return result.multLocal(distance).addLocal(camera.getLocation());
+    }
+
+    /** Atmospheric/time-of-day multiplier generated by SkyControl for shadows. */
+    public float getPrimaryShadowIntensity() {
+        requireSkyControl();
+        SkyLightingSnapshot snapshot = skyControl.lightingSnapshot();
+        if (snapshot == null || !Float.isFinite(snapshot.shadowIntensity())) {
+            return 1f;
+        }
+        return Math.max(0f, Math.min(1f, snapshot.shadowIntensity()));
+    }
+
+    public boolean isSunUp() {
+        requireSkyControl();
+        SkyLightingSnapshot snapshot = skyControl.lightingSnapshot();
+        return snapshot != null && snapshot.sunUp();
+    }
+
+    public boolean isMoonUp() {
+        requireSkyControl();
+        SkyLightingSnapshot snapshot = skyControl.lightingSnapshot();
+        return snapshot != null && snapshot.moonUp();
+    }
+
+    /** Resolve the celestial source selected by SkyControl for the main light. */
+    public String getPrimaryLightSource() {
+        Vector3f main = getPrimaryLightPropagationDirection(null);
+        Vector3f sunPropagation = getDirectionToSun(null).negateLocal();
+        Vector3f moonPropagation = getDirectionToMoon(null).negateLocal();
+        float sunAlignment = main.dot(sunPropagation);
+        float moonAlignment = main.dot(moonPropagation);
+        if (isSunUp() && sunAlignment >= moonAlignment) {
+            return "sun";
+        }
+        if (isMoonUp() && moonAlignment > sunAlignment) {
+            return "moon";
+        }
+        return "starlight";
+    }
+
+    /** The historical getSun() object is SkyControl's active main light. */
+    public DirectionalLight getPrimaryDirectionalLight() {
+        return sun;
+    }
+
     public SkyControl getSkyControl() {
         return skyControl;
     }
@@ -105,6 +269,19 @@ public class Sky {
         result.put("onRenderThread", isRenderThread());
         result.put("frameLoopOwner", "jMonkeyEngine control lifecycle");
         result.put("transitionTickSource", "SkyControl.controlUpdate(tpf)");
+        if (skyControl != null) {
+            result.put("primaryDirectionalSource", getPrimaryLightSource());
+            result.put("primaryLightPropagationDirection", vectorToMap(
+                    getPrimaryLightPropagationDirection(null)
+            ));
+            result.put("directionToPrimaryLight", vectorToMap(
+                    getDirectionToPrimaryLight(null)
+            ));
+            result.put("sunUp", isSunUp());
+            result.put("moonUp", isMoonUp());
+            result.put("primaryShadowIntensity", getPrimaryShadowIntensity());
+            result.put("directionAuthority", "-SkyLightingSnapshot.mainDirection");
+        }
         return result;
     }
 
@@ -165,6 +342,12 @@ public class Sky {
         } catch (RuntimeException exception) {
             logger.error("Failed to initialize SkySimulation command bus", exception);
             return null;
+        }
+    }
+
+    private void requireSkyControl() {
+        if (skyControl == null) {
+            throw new IllegalStateException("SkyControl is not initialized");
         }
     }
 
@@ -246,6 +429,14 @@ public class Sky {
         result.put("g", color.g);
         result.put("b", color.b);
         result.put("a", color.a);
+        return result;
+    }
+
+    private static Map<String, Object> vectorToMap(Vector3f vector) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("x", vector.x);
+        result.put("y", vector.y);
+        result.put("z", vector.z);
         return result;
     }
 

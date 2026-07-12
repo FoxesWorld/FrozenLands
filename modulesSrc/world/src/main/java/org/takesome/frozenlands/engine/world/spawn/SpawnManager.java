@@ -28,7 +28,9 @@ public final class SpawnManager extends BaseAppState {
     private final String terrainReadyEvent;
     private final boolean spawnOnTerrainReadyEvent;
     private final boolean replayTerrainReadyEvent;
+    private final boolean autoSpawn;
     private Player player;
+    private boolean spawnRequested;
     private int framesWaited;
     private boolean terrainReadyEventReceived;
     private AutoCloseable terrainReadySubscription;
@@ -50,6 +52,8 @@ public final class SpawnManager extends BaseAppState {
         this.terrainReadyEvent = loader.string(spawn, "terrainReadyEvent", "terrain." + "collision.ready");
         this.spawnOnTerrainReadyEvent = loader.bool(spawn, "spawnOnTerrainReadyEvent", true);
         this.replayTerrainReadyEvent = loader.bool(spawn, "replayTerrainReadyEvent", true);
+        this.autoSpawn = loader.bool(spawn, "autoSpawn", false);
+        this.spawnRequested = autoSpawn;
     }
 
     @Override
@@ -77,16 +81,30 @@ public final class SpawnManager extends BaseAppState {
         }
         framesWaited++;
 
-        attemptTerrainSpawn("terrain-ready-poll");
+        if (spawnRequested) {
+            attemptTerrainSpawn("terrain-ready-poll");
+        }
     }
 
     public Player spawnNow() {
+        spawnRequested = true;
         if (player != null) {
             return player;
         }
-        Vector3f spawnLocation = terrainManager.findSafeSpawnLocation(spawnX, spawnZ, spawnClearance)
-                .orElse(fallbackSpawn.clone());
-        spawn(spawnLocation, "manual");
+        if (!isTerrainReadyForSpawn()) {
+            context.getLogger().info("Player spawn requested but terrain is not ready yet mode={} collisionReady={} collisionReadyAtSpawn={} visualReady={}",
+                    terrainReadyMode,
+                    terrainManager.isTerrainCollisionReady(),
+                    terrainManager.isTerrainCollisionReadyAt(spawnX, spawnZ),
+                    terrainManager.findSafeSpawnLocation(spawnX, spawnZ, spawnClearance).isPresent());
+            return null;
+        }
+        Optional<Vector3f> spawnLocation = resolveSpawnLocation();
+        if (spawnLocation.isEmpty()) {
+            context.getLogger().warn("Player spawn requested but no safe terrain location resolved x={} z={} clearance={}", spawnX, spawnZ, spawnClearance);
+            return null;
+        }
+        spawn(spawnLocation.get(), "manual");
         return player;
     }
 
@@ -105,8 +123,11 @@ public final class SpawnManager extends BaseAppState {
         status.put("terrainReadyMode", terrainReadyMode);
         status.put("terrainReadyEvent", terrainReadyEvent);
         status.put("terrainReadyEventReceived", terrainReadyEventReceived);
+        status.put("autoSpawn", autoSpawn);
+        status.put("spawnRequested", spawnRequested);
         status.put("terrainVisualReady", terrainManager.findSafeSpawnLocation(spawnX, spawnZ, spawnClearance).isPresent());
         status.put("terrainCollisionReady", terrainManager.isTerrainCollisionReady());
+        status.put("terrainCollisionReadyAtSpawn", terrainManager.isTerrainCollisionReadyAt(spawnX, spawnZ));
         status.put("terrainReady", isTerrainReadyForSpawn());
         if (player != null) {
             Vector3f position = player.getPlayerPosition();
@@ -140,11 +161,18 @@ public final class SpawnManager extends BaseAppState {
     }
 
     private void attemptTerrainSpawn(String reason) {
-        if (player != null || !isTerrainReadyForSpawn()) {
+        if (!spawnRequested || player != null || !isTerrainReadyForSpawn()) {
             return;
         }
-        Optional<Vector3f> terrainSpawn = terrainManager.findSafeSpawnLocation(spawnX, spawnZ, spawnClearance);
+        Optional<Vector3f> terrainSpawn = resolveSpawnLocation();
         terrainSpawn.ifPresent(location -> spawn(location, reason));
+    }
+
+    private Optional<Vector3f> resolveSpawnLocation() {
+        if (READY_PHYSICS_COLLISION.equals(terrainReadyMode)) {
+            return terrainManager.findCollisionSafeSpawnLocation(spawnX, spawnZ, spawnClearance);
+        }
+        return terrainManager.findSafeSpawnLocation(spawnX, spawnZ, spawnClearance);
     }
 
     private boolean isTerrainReadyForSpawn() {
@@ -154,7 +182,7 @@ public final class SpawnManager extends BaseAppState {
         if (READY_VISUAL_HEIGHT.equals(terrainReadyMode)) {
             return terrainManager.findSafeSpawnLocation(spawnX, spawnZ, spawnClearance).isPresent();
         }
-        return terrainManager.isTerrainCollisionReady();
+        return terrainManager.findCollisionSafeSpawnLocation(spawnX, spawnZ, spawnClearance).isPresent();
     }
 
     private void spawn(Vector3f spawnLocation, String reason) {

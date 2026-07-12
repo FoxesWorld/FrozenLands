@@ -38,8 +38,32 @@ public class PlayerOptions {
     private float firstPersonLookAheadDistance;
     private float thirdPersonDistance;
     private float thirdPersonHeight;
+    private float thirdPersonTargetHeight;
+    private float thirdPersonVerticalOffset;
+    private float thirdPersonShoulderOffset;
+    private float thirdPersonLookAheadDistance;
     private float frontPersonDistance;
     private float frontPersonHeight;
+    private float frontPersonTargetHeight;
+    private float frontPersonVerticalOffset;
+    private float frontPersonLookAheadDistance;
+    private float firstPersonFovDegrees;
+    private float thirdPersonFovDegrees;
+    private float frontPersonFovDegrees;
+    private float cameraLookResponse;
+    private float firstPersonPositionResponse;
+    private float thirdPersonPositionResponse;
+    private float cameraTargetResponse;
+    private float cameraFovResponse;
+    private float cameraNearClip;
+    private boolean cameraCollisionEnabled;
+    private float cameraCollisionPadding;
+    private float cameraMinimumDistance;
+    private float cameraZoomMinimumDistance;
+    private float cameraZoomMaximumDistance;
+    private float cameraZoomStep;
+    private float cameraZoomResponse;
+    private boolean cameraWheelSwitchesView;
     private float cameraTransitionSeconds;
     private float mouseSensitivity;
     private float minMouseSensitivity;
@@ -82,16 +106,57 @@ public class PlayerOptions {
         this.firstPersonCameraForwardOffset = RuntimeMaps.floating(camera, "firstPersonCameraForwardOffset", 0.18f);
         this.firstPersonCameraVerticalOffset = RuntimeMaps.floating(camera, "firstPersonCameraVerticalOffset", -0.08f);
         this.firstPersonLookAheadDistance = Math.max(0.25f, RuntimeMaps.floating(camera, "firstPersonLookAheadDistance", 8.0f));
-        this.thirdPersonDistance = RuntimeMaps.floating(camera, "thirdPersonDistance", 6.0f);
+
+        this.thirdPersonDistance = Math.max(0.5f, RuntimeMaps.floating(camera, "thirdPersonDistance", 5.0f));
         this.thirdPersonHeight = RuntimeMaps.floating(camera, "thirdPersonHeight", 2.15f);
+        this.thirdPersonTargetHeight = RuntimeMaps.floating(camera, "thirdPersonTargetHeight", this.firstPersonEyeHeight);
+        this.thirdPersonVerticalOffset = RuntimeMaps.floating(
+                camera,
+                "thirdPersonVerticalOffset",
+                Math.max(0f, this.thirdPersonHeight - this.thirdPersonTargetHeight)
+        );
+        this.thirdPersonShoulderOffset = RuntimeMaps.floating(camera, "thirdPersonShoulderOffset", 0.45f);
+        this.thirdPersonLookAheadDistance = Math.max(0f, RuntimeMaps.floating(camera, "thirdPersonLookAheadDistance", 0.35f));
+
+        this.frontPersonDistance = Math.max(0.5f, RuntimeMaps.floating(camera, "frontPersonDistance", this.thirdPersonDistance * 0.85f));
+        this.frontPersonHeight = RuntimeMaps.floating(camera, "frontPersonHeight", this.thirdPersonHeight);
+        this.frontPersonTargetHeight = RuntimeMaps.floating(camera, "frontPersonTargetHeight", this.firstPersonEyeHeight);
+        this.frontPersonVerticalOffset = RuntimeMaps.floating(
+                camera,
+                "frontPersonVerticalOffset",
+                Math.max(0f, this.frontPersonHeight - this.frontPersonTargetHeight)
+        );
+        this.frontPersonLookAheadDistance = Math.max(0f, RuntimeMaps.floating(camera, "frontPersonLookAheadDistance", 0.15f));
+
+        this.firstPersonFovDegrees = clamp(RuntimeMaps.floating(camera, "firstPersonFovDegrees", 80f), 45f, 120f);
+        this.thirdPersonFovDegrees = clamp(RuntimeMaps.floating(camera, "thirdPersonFovDegrees", 70f), 45f, 120f);
+        this.frontPersonFovDegrees = clamp(RuntimeMaps.floating(camera, "frontPersonFovDegrees", 68f), 45f, 120f);
+        this.cameraLookResponse = Math.max(1f, RuntimeMaps.floating(camera, "lookResponse", 36f));
+        this.firstPersonPositionResponse = Math.max(1f, RuntimeMaps.floating(camera, "firstPersonPositionResponse", 42f));
+        this.thirdPersonPositionResponse = Math.max(1f, RuntimeMaps.floating(camera, "thirdPersonPositionResponse", 14f));
+        this.cameraTargetResponse = Math.max(1f, RuntimeMaps.floating(camera, "targetResponse", 28f));
+        this.cameraFovResponse = Math.max(1f, RuntimeMaps.floating(camera, "fovResponse", 12f));
+        this.cameraNearClip = Math.max(0.01f, RuntimeMaps.floating(camera, "nearClip", 0.06f));
+        this.cameraCollisionEnabled = RuntimeMaps.bool(camera, "collisionEnabled", true);
+        this.cameraCollisionPadding = Math.max(0f, RuntimeMaps.floating(camera, "collisionPadding", 0.22f));
+        this.cameraMinimumDistance = Math.max(0.1f, RuntimeMaps.floating(camera, "minimumDistance", 0.75f));
+        this.cameraZoomMinimumDistance = Math.max(
+                this.cameraMinimumDistance,
+                RuntimeMaps.floating(camera, "zoomMinimumDistance", 1.4f)
+        );
+        this.cameraZoomMaximumDistance = Math.max(
+                this.cameraZoomMinimumDistance,
+                RuntimeMaps.floating(camera, "zoomMaximumDistance", 9.0f)
+        );
+        this.cameraZoomStep = Math.max(0.05f, RuntimeMaps.floating(camera, "zoomStep", 0.65f));
+        this.cameraZoomResponse = Math.max(1f, RuntimeMaps.floating(camera, "zoomResponse", 16f));
+        this.cameraWheelSwitchesView = RuntimeMaps.bool(camera, "wheelSwitchesView", true);
+        this.cameraTransitionSeconds = Math.max(0.01f, RuntimeMaps.floating(camera, "transitionSeconds", 0.18f));
 
         Map<String, Object> input = RuntimeMaps.map(optionsMap, "input");
         this.minMouseSensitivity = Math.max(0.01f, RuntimeMaps.floating(input, "minMouseSensitivity", 0.2f));
         this.maxMouseSensitivity = Math.max(this.minMouseSensitivity, RuntimeMaps.floating(input, "maxMouseSensitivity", 3.0f));
         this.mouseSensitivity = clamp(RuntimeMaps.floating(input, "mouseSensitivity", 1.0f), minMouseSensitivity, maxMouseSensitivity);
-        this.frontPersonDistance = RuntimeMaps.floating(camera, "frontPersonDistance", this.thirdPersonDistance * 0.85f);
-        this.frontPersonHeight = RuntimeMaps.floating(camera, "frontPersonHeight", this.thirdPersonHeight);
-        this.cameraTransitionSeconds = Math.max(0.01f, RuntimeMaps.floating(camera, "transitionSeconds", 0.32f));
     }
 
 
@@ -134,8 +199,32 @@ public class PlayerOptions {
     public float getFirstPersonLookAheadDistance() { return firstPersonLookAheadDistance; }
     public float getThirdPersonDistance() { return thirdPersonDistance; }
     public float getThirdPersonHeight() { return thirdPersonHeight; }
+    public float getThirdPersonTargetHeight() { return thirdPersonTargetHeight; }
+    public float getThirdPersonVerticalOffset() { return thirdPersonVerticalOffset; }
+    public float getThirdPersonShoulderOffset() { return thirdPersonShoulderOffset; }
+    public float getThirdPersonLookAheadDistance() { return thirdPersonLookAheadDistance; }
     public float getFrontPersonDistance() { return frontPersonDistance; }
     public float getFrontPersonHeight() { return frontPersonHeight; }
+    public float getFrontPersonTargetHeight() { return frontPersonTargetHeight; }
+    public float getFrontPersonVerticalOffset() { return frontPersonVerticalOffset; }
+    public float getFrontPersonLookAheadDistance() { return frontPersonLookAheadDistance; }
+    public float getFirstPersonFovDegrees() { return firstPersonFovDegrees; }
+    public float getThirdPersonFovDegrees() { return thirdPersonFovDegrees; }
+    public float getFrontPersonFovDegrees() { return frontPersonFovDegrees; }
+    public float getCameraLookResponse() { return cameraLookResponse; }
+    public float getFirstPersonPositionResponse() { return firstPersonPositionResponse; }
+    public float getThirdPersonPositionResponse() { return thirdPersonPositionResponse; }
+    public float getCameraTargetResponse() { return cameraTargetResponse; }
+    public float getCameraFovResponse() { return cameraFovResponse; }
+    public float getCameraNearClip() { return cameraNearClip; }
+    public boolean isCameraCollisionEnabled() { return cameraCollisionEnabled; }
+    public float getCameraCollisionPadding() { return cameraCollisionPadding; }
+    public float getCameraMinimumDistance() { return cameraMinimumDistance; }
+    public float getCameraZoomMinimumDistance() { return cameraZoomMinimumDistance; }
+    public float getCameraZoomMaximumDistance() { return cameraZoomMaximumDistance; }
+    public float getCameraZoomStep() { return cameraZoomStep; }
+    public float getCameraZoomResponse() { return cameraZoomResponse; }
+    public boolean isCameraWheelSwitchesView() { return cameraWheelSwitchesView; }
     public float getCameraTransitionSeconds() { return cameraTransitionSeconds; }
     public Camera getFpsCam() { return fpsCam; }
     public void setFpsCam(Camera fpsCam) { this.fpsCam = fpsCam; }

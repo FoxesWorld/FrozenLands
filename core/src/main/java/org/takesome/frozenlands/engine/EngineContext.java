@@ -10,6 +10,7 @@ import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Node;
 import org.slf4j.Logger;
 import org.takesome.frozenlands.engine.assets.AssetLibrary;
+import org.takesome.frozenlands.engine.events.EngineEventBus;
 import org.takesome.frozenlands.engine.modules.ModuleRegistry;
 import org.takesome.frozenlands.engine.providers.ProviderRegistry;
 import org.takesome.frozenlands.engine.services.EngineServicePool;
@@ -30,6 +31,7 @@ public interface EngineContext {
     InputManager getInputManager();
     Camera getCamera();
     Logger getLogger();
+    EngineEventBus getEventBus();
     BulletAppState getBulletAppState();
     ProviderRegistry getProviderRegistry();
     ModuleRegistry getModuleRegistry();

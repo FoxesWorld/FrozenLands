@@ -60,7 +60,7 @@
         ],
         "minPerTile": 80,
         "maxPerTile": 160,
-        "placementAttempts": 16,
+        "placementAttempts": 28,
         "rayStartHeight": 800.0,
         "scale": {
           "min": 0.42,
@@ -75,6 +75,16 @@
           "footprintPadding": 0.65,
           "maxSurfaceDelta": 1.65,
           "minSpacing": 2.75
+        },
+        "congruence": {
+          "minScore": 0.66,
+          "maxSlopeDegrees": 18.0,
+          "maxPlaneResidual": 0.42,
+          "minSupportRatio": 0.76,
+          "preferredClearance": 5.5,
+          "clearanceTolerance": 4.0,
+          "edgeComfort": 4.0,
+          "groundingEmbed": 0.06
         },
         "collision": {
           "enabled": true,
@@ -122,7 +132,7 @@
     "collisionReadyTopic": "terrain.collision.ready"
   },
   "collision": {
-    "mode": "mesh",
+    "mode": "heightfield",
     "logReady": true
   }
 }

@@ -240,3 +240,8 @@ The diagnostic output is useful after changing modules, providers, Lua API files
 ## License
 
 No public license has been declared yet. Until a license is added, all rights are reserved by the repository owner.
+
+
+## HFrame integration
+
+FrozenLands can optionally load `org.takesome:hframe-core:0.1.0-SNAPSHOT` from Maven Local and run a short HFrame native startup probe with `-Dfrozenlands.hframe.enabled=true`. See `docs/HFRAME_INTEGRATION.md`.

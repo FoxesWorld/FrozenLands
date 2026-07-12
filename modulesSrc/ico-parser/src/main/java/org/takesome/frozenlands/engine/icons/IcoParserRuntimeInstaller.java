@@ -16,6 +16,12 @@ public final class IcoParserRuntimeInstaller implements EngineRuntimeInstaller {
 
     @Override
     public void install(EngineContext context) {
-        context.getModuleRegistry().register(new IcoParserModule(), context);
+        IcoFileParser parser = new IcoFileParser();
+        EngineIconLoader loader = new EngineIconLoader(parser);
+        IcoParserModule module = new IcoParserModule(parser, loader);
+        context.getModuleRegistry().register(module, context);
+        context.registerService(IcoFileParser.class, parser);
+        context.registerService(EngineIconLoader.class, loader);
+        context.registerService(IcoParserModule.LOADER_SERVICE_ID, EngineIconLoader.class, loader);
     }
 }

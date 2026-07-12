@@ -4,7 +4,7 @@
   "modulePath": "modulesSrc/shaders",
   "id": "engine.shaders",
   "type": "runtime",
-  "description": "Shader runtime module: post-processing and shadow settings.",
+  "description": "Production dynamic primary-light shadow runtime with sun/moon tracking, world-space PCSS, arithmetic visibility resolve, explicit hard/path/hybrid modes, GPU-budget presets and frame benchmarks.",
   "project": {
     "id": "takesome.frozenlands",
     "name": "Take Some() Frozen Lands",
@@ -16,7 +16,7 @@
   "lua": {
     "api": "src/main/resources/scripts/lua/api.lua",
     "events": "src/main/resources/scripts/lua/events.lua",
-    "usage": "local m = require('engine.shaders'); m.call('status', {})"
+    "usage": "local shaders = require('engine.shaders'); shaders.solar_shadows.apply_preset('balanced'); shaders.solar_shadows.benchmark.start(600, 60)"
   },
   "runtime": {
     "configs": {

@@ -103,6 +103,9 @@ public final class HtmlUiState extends BaseAppState implements ActionListener {
         uninstallDevToolsMapping();
         removeSurface();
         texture = null;
+        if (runtime != null) {
+            runtime.close();
+        }
         runtime = null;
         runtimeAvailable = false;
         startupFocusAttempts = 0;
