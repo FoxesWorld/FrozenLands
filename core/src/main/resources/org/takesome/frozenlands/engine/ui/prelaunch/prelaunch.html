@@ -27,29 +27,28 @@
     <section id="hero-card" class="card hero-card">
         <div class="kicker">TakeSome() Runtime</div>
         <h1 id="hero-title">FrozenLands</h1>
-        <p id="hero-subtitle">Configure the display before the cold world boots.</p>
+        <p id="hero-subtitle">Configure the complete render path before the cold world boots.</p>
 
         <div id="summary-card" class="summary-card">
             <div class="summary-label">Launch plan</div>
-            <div id="prelaunch-summary" class="summary-value">Windowed · 1280 × 960 · Off · VSync off</div>
+            <div id="prelaunch-summary" class="summary-value">Windowed · Native · Medium · MSAA Off · FXAA On · SSAO Off</div>
         </div>
 
         <div id="meta-ui" class="meta-row"><span>UI</span><span class="meta-value">HtmlDom Launcher</span></div>
-        <div id="meta-build" class="meta-row"><span>Build</span><span class="meta-value">FrozenLands Prototype</span>
-        </div>
+        <div id="meta-build" class="meta-row"><span>Build</span><span class="meta-value">FrozenLands Prototype</span></div>
     </section>
 
     <section id="control-card" class="card control-card">
-        <div class="kicker">Display setup</div>
+        <div class="kicker">Graphics setup</div>
         <h2 id="control-title">Launch Control</h2>
 
         <div id="profile-card" class="setting-block block-profile">
-            <div class="setting-title"><span class="icon pl-icon cogs">&#xf085;</span> Profile</div>
-            <div class="setting-hint">Fast selector for common display setups.</div>
+            <div class="setting-title"><span class="icon pl-icon cogs">&#xf085;</span> Presets</div>
+            <div class="setting-hint">Applies a complete display and render profile. Every option remains independently editable.</div>
             <button id="preset-performance" class="choice-button" data-action="preset.performance">Performance</button>
             <button id="preset-balanced" class="choice-button" data-action="preset.balanced">Balanced</button>
             <button id="preset-quality" class="choice-button" data-action="preset.quality">Quality</button>
-            <button id="preset-fullscreen" class="choice-button" data-action="preset.fullscreen">Fullscreen</button>
+            <button id="preset-ultra" class="choice-button" data-action="preset.ultra">Ultra</button>
         </div>
 
         <div id="resolution-card" class="setting-block block-resolution">
@@ -66,12 +65,37 @@
             <button id="fullscreen-toggle" class="wide-button" data-action="fullscreen.toggle">Windowed</button>
         </div>
 
+        <div id="quality-card" class="setting-block block-quality">
+            <div class="setting-title"><span class="icon pl-icon quality">&#xf201;</span> Graphics quality</div>
+            <div class="setting-hint">Textures, terrain/model LOD, particles, weather, sky and UI quality.</div>
+            <button id="quality-prev" class="step-button" data-action="quality.prev">‹</button>
+            <span id="quality-value" class="step-value">Medium</span>
+            <button id="quality-next" class="step-button" data-action="quality.next">›</button>
+        </div>
+
+        <div id="shadow-card" class="setting-block block-shadow">
+            <div class="setting-title"><span class="icon pl-icon shadows">&#xf06e;</span> Shadow quality</div>
+            <div class="setting-hint">Selects CSM/PCSS cost, map size, cascades and filtering budget.</div>
+            <button id="shadow-prev" class="step-button" data-action="shadow.prev">‹</button>
+            <span id="shadow-value" class="step-value">Balanced</span>
+            <button id="shadow-next" class="step-button" data-action="shadow.next">›</button>
+        </div>
+
         <div id="aa-card" class="setting-block block-aa">
-            <div class="setting-title"><span class="icon pl-icon antiAliasing">&#xf0eb;</span> Anti-aliasing</div>
-            <div class="setting-hint">Windowed MSAA level.</div>
+            <div class="setting-title"><span class="icon pl-icon antiAliasing">&#xf0eb;</span> MSAA</div>
+            <div class="setting-hint">Hardware multisampling. Available in both windowed and fullscreen modes.</div>
             <button id="msaa-prev" class="step-button" data-action="msaa.prev">‹</button>
             <span id="msaa-value" class="step-value">Off</span>
             <button id="msaa-next" class="step-button" data-action="msaa.next">›</button>
+        </div>
+
+        <div id="effects-card" class="setting-block block-effects">
+            <button id="fxaa-toggle" class="effect-button" data-action="fxaa.toggle">FXAA On</button>
+            <button id="ssao-toggle" class="effect-button" data-action="ssao.toggle">SSAO Off</button>
+            <button id="bloom-toggle" class="effect-button" data-action="bloom.toggle">Bloom On</button>
+            <button id="dof-toggle" class="effect-button" data-action="dof.toggle">DOF Off</button>
+            <button id="rays-toggle" class="effect-button" data-action="rays.toggle">Rays Off</button>
+            <button id="shadows-toggle" class="effect-button effect-button-wide" data-action="shadows.toggle">Shadows On</button>
         </div>
 
         <div id="toggles-card" class="setting-block block-toggles">

@@ -1,0 +1,428 @@
+@keyframes fl-root-fade-in {
+  0% { opacity: 0; transform: translate(0px, 0px) scale(1.018) rotate(0deg); }
+  100% { opacity: 1; transform: translate(0px, 0px) scale(1) rotate(0deg); }
+}
+
+@keyframes fl-boot-card-in {
+  0% { opacity: 0; transform: translate(0px, 28px) scale(0.925) rotate(0deg); }
+  68% { opacity: 1; transform: translate(0px, -4px) scale(1.012) rotate(0deg); }
+  100% { opacity: 1; transform: translate(0px, 0px) scale(1) rotate(0deg); }
+}
+
+@keyframes fl-vignette-breathe {
+  0% { opacity: 0.32; transform: translate(0px, 0px) scale(1) rotate(0deg); }
+  50% { opacity: 0.46; transform: translate(0px, 0px) scale(1.018) rotate(0deg); }
+  100% { opacity: 0.32; transform: translate(0px, 0px) scale(1) rotate(0deg); }
+}
+
+@keyframes fl-aurora-left {
+  0% { opacity: 0.14; transform: translate(-62px, 18px) scale(0.96) rotate(-8deg); }
+  50% { opacity: 0.36; transform: translate(34px, -12px) scale(1.08) rotate(4deg); }
+  100% { opacity: 0.14; transform: translate(-62px, 18px) scale(0.96) rotate(-8deg); }
+}
+
+@keyframes fl-aurora-right {
+  0% { opacity: 0.10; transform: translate(76px, -16px) scale(1.08) rotate(8deg); }
+  50% { opacity: 0.30; transform: translate(-22px, 22px) scale(0.98) rotate(-4deg); }
+  100% { opacity: 0.10; transform: translate(76px, -16px) scale(1.08) rotate(8deg); }
+}
+
+@keyframes fl-drift {
+  0% { opacity: 0; transform: translate(-90px, 30px) scale(0.82) rotate(0deg); }
+  12% { opacity: 0.55; }
+  74% { opacity: 0.42; }
+  100% { opacity: 0; transform: translate(1160px, -52px) scale(1.12) rotate(0deg); }
+}
+
+@keyframes fl-logo-float {
+  0% { opacity: 0.94; transform: translate(0px, 0px) scale(0.992) rotate(0deg); }
+  50% { opacity: 1; transform: translate(0px, -5px) scale(1.014) rotate(0deg); }
+  100% { opacity: 0.94; transform: translate(0px, 0px) scale(0.992) rotate(0deg); }
+}
+
+@keyframes fl-logo-spin {
+  0% { transform: translate(0px, 0px) scale(1) rotate(0deg); }
+  100% { transform: translate(0px, 0px) scale(1) rotate(360deg); }
+}
+
+@keyframes fl-logo-frame-pulse {
+  0% { opacity: 0.92; transform: translate(0px, 0px) scale(1) rotate(0deg); }
+  50% { opacity: 1; transform: translate(0px, 0px) scale(1.018) rotate(0deg); }
+  100% { opacity: 0.92; transform: translate(0px, 0px) scale(1) rotate(0deg); }
+}
+
+@keyframes fl-logo-aura-spin {
+  0% { opacity: 0.28; transform: translate(0px, 0px) scale(0.94) rotate(0deg); }
+  50% { opacity: 0.62; transform: translate(0px, 0px) scale(1.02) rotate(180deg); }
+  100% { opacity: 0.28; transform: translate(0px, 0px) scale(0.94) rotate(360deg); }
+}
+
+@keyframes fl-logo-aura-counter-spin {
+  0% { opacity: 0.20; transform: translate(0px, 0px) scale(1.04) rotate(360deg); }
+  50% { opacity: 0.48; transform: translate(0px, 0px) scale(0.98) rotate(180deg); }
+  100% { opacity: 0.20; transform: translate(0px, 0px) scale(1.04) rotate(0deg); }
+}
+
+@keyframes fl-logo-scan {
+  0% { opacity: 0; transform: translate(-120px, 0px) scale(0.55) rotate(-18deg); }
+  18% { opacity: 0.92; transform: translate(-42px, 0px) scale(0.82) rotate(-18deg); }
+  42% { opacity: 0.72; transform: translate(44px, 0px) scale(1.0) rotate(-18deg); }
+  70% { opacity: 0; transform: translate(126px, 0px) scale(0.72) rotate(-18deg); }
+  100% { opacity: 0; transform: translate(126px, 0px) scale(0.72) rotate(-18deg); }
+}
+
+@keyframes fl-wordmark-breathe {
+  0% { opacity: 0.78; transform: translate(0px, 0px) scale(0.992) rotate(0deg); }
+  50% { opacity: 1; transform: translate(0px, -1px) scale(1.014) rotate(0deg); }
+  100% { opacity: 0.78; transform: translate(0px, 0px) scale(0.992) rotate(0deg); }
+}
+
+@keyframes fl-progress-shine {
+  0% { opacity: 0; transform: translate(-460px, 0px) scale(0.72) rotate(0deg); }
+  22% { opacity: 0.86; }
+  50% { opacity: 0.56; }
+  100% { opacity: 0; transform: translate(460px, 0px) scale(1) rotate(0deg); }
+}
+
+@keyframes fl-stage-fade-drift {
+  0% { opacity: 0.62; transform: translate(0px, 1px) scale(0.998) rotate(0deg); }
+  50% { opacity: 1; transform: translate(0px, -1px) scale(1.004) rotate(0deg); }
+  100% { opacity: 0.62; transform: translate(0px, 1px) scale(0.998) rotate(0deg); }
+}
+
+@keyframes fl-pulse-dot {
+  0% { opacity: 0.22; transform: translate(0px, 0px) scale(0.72) rotate(0deg); }
+  50% { opacity: 1; transform: translate(0px, -3px) scale(1.12) rotate(0deg); }
+  100% { opacity: 0.22; transform: translate(0px, 0px) scale(0.72) rotate(0deg); }
+}
+
+html, body {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #060b12;
+  color: #eaf7ff;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+}
+
+.boot-root {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #07111d;
+  color: #eaf7ff;
+  opacity: 1;
+  animation: fl-root-fade-in 520ms ease-out 1 both;
+}
+
+.boot-vignette {
+  display: block;
+  position: absolute;
+  left: -4%;
+  top: -4%;
+  width: 108%;
+  height: 108%;
+  margin: 0;
+  padding: 0;
+  background: #04070c;
+  opacity: 0.36;
+  animation: fl-vignette-breathe 4.6s ease-in-out infinite both;
+}
+
+.boot-aurora {
+  display: block;
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  margin: 0;
+  padding: 0;
+  border-radius: 360px;
+  background: rgba(64, 178, 255, 0.22);
+  border: 1px solid rgba(145, 225, 255, 0.16);
+}
+
+.aurora-left {
+  left: 120px;
+  top: 92px;
+  animation: fl-aurora-left 7.2s ease-in-out infinite both;
+}
+
+.aurora-right {
+  right: 110px;
+  bottom: 78px;
+  width: 300px;
+  height: 300px;
+  animation: fl-aurora-right 8.4s ease-in-out infinite both;
+}
+
+.boot-drift {
+  display: block;
+  position: absolute;
+  left: 0;
+  width: 170px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  background: rgba(145, 225, 255, 0.44);
+  opacity: 0;
+  animation: fl-drift 5.6s linear infinite both;
+}
+
+.drift-a { top: 178px; animation-delay: 0ms; }
+.drift-b { top: 426px; animation-delay: 1420ms; }
+.drift-c { top: 566px; animation-delay: 2820ms; }
+
+.boot-card {
+  display: block;
+  position: relative;
+  width: 700px;
+  height: 492px;
+  margin: 88px auto 0 auto;
+  padding: 32px 52px 34px 52px;
+  background: rgba(9, 21, 34, 0.82);
+  border: 1px solid rgba(110, 210, 255, 0.34);
+  border-radius: 24px;
+  color: #eaf7ff;
+  opacity: 1;
+  animation: fl-boot-card-in 720ms ease-out 1 both;
+}
+
+.boot-logo {
+  display: block;
+  position: relative;
+  width: 222px;
+  height: 222px;
+  margin: 0 auto 14px auto;
+  padding: 0;
+  animation: fl-logo-float 2.2s ease-in-out infinite both;
+}
+
+.boot-logo-aura {
+  display: block;
+  position: absolute;
+  left: 15px;
+  top: 15px;
+  width: 190px;
+  height: 190px;
+  border-radius: 120px;
+  border: 2px solid rgba(100, 219, 255, 0.40);
+  background: transparent;
+}
+
+.aura-a {
+  animation: fl-logo-aura-spin 3.2s linear infinite both;
+}
+
+.aura-b {
+  left: 31px;
+  top: 31px;
+  width: 158px;
+  height: 158px;
+  opacity: 0.42;
+  animation: fl-logo-aura-counter-spin 2.6s linear infinite both;
+}
+
+.boot-logo-frame {
+  display: block;
+  position: absolute;
+  left: 25px;
+  top: 25px;
+  width: 172px;
+  height: 172px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(178, 238, 255, 0.54);
+  background: rgba(11, 28, 44, 0.78);
+  animation: fl-logo-frame-pulse 1.85s ease-in-out infinite both;
+}
+
+.boot-logo-spin {
+  display: block;
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  width: 144px;
+  height: 144px;
+  margin: 0;
+  padding: 0;
+  animation: fl-logo-spin 4.8s linear infinite both;
+}
+
+.boot-logo-image {
+  display: block;
+  width: 144px;
+  height: 144px;
+  margin: 0;
+  padding: 0;
+  background: url("img/helix.png");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.boot-logo-scan {
+  display: block;
+  position: absolute;
+  left: 72px;
+  top: -30px;
+  width: 28px;
+  height: 236px;
+  margin: 0;
+  padding: 0;
+  border-radius: 20px;
+  background: rgba(177, 239, 255, 0.52);
+  opacity: 0;
+  animation: fl-logo-scan 2.3s ease-in-out infinite both;
+}
+
+.scan-a { animation-delay: 220ms; }
+.scan-b { animation-delay: 1320ms; }
+
+.boot-wordmark {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  animation: fl-wordmark-breathe 1.9s ease-in-out infinite both;
+}
+
+.boot-logo-text {
+  display: block;
+  width: 468px;
+  height: 82px;
+  margin: 0 auto;
+  padding: 0;
+  background: url("img/logoText.png");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.boot-subtitle {
+  display: block;
+  width: 100%;
+  height: 24px;
+  margin: 4px 0 0 0;
+  padding: 0;
+  color: #a9dcf8;
+  font-size: 15px;
+  font-weight: bold;
+  line-height: 24px;
+  text-align: center;
+}
+
+.boot-progress-shell {
+  display: block;
+  position: relative;
+  width: 456px;
+  height: 34px;
+  margin: 20px auto 0 auto;
+  padding: 0;
+}
+
+.boot-progress-track {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 456px;
+  height: 13px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(19, 41, 59, 0.92);
+  border: 1px solid rgba(122, 223, 255, 0.22);
+}
+
+.boot-progress-fill {
+  display: block;
+  width: 0%;
+  height: 13px;
+  margin: 0;
+  padding: 0;
+  border-radius: 14px;
+  background: rgba(96, 210, 255, 0.92);
+  transition: width 420ms ease-out;
+}
+
+.boot-progress-shine {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 120px;
+  height: 13px;
+  margin: 0;
+  padding: 0;
+  border-radius: 14px;
+  background: rgba(236, 252, 255, 0.48);
+  opacity: 0;
+  animation: fl-progress-shine 1.55s ease-in-out infinite both;
+}
+
+.boot-progress-label {
+  display: block;
+  position: absolute;
+  right: -54px;
+  top: 2px;
+  width: 46px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  color: #eaf7ff;
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 22px;
+  text-align: left;
+}
+
+.boot-stage {
+  display: block;
+  width: 100%;
+  height: 26px;
+  margin: 12px 0 0 0;
+  padding: 0;
+  color: #d9f1ff;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 26px;
+  text-align: center;
+  animation: fl-stage-fade-drift 1.65s ease-in-out infinite both;
+  transition: opacity 260ms ease-out, transform 260ms ease-out;
+}
+
+.boot-pulse-row {
+  display: block;
+  width: 90px;
+  height: 22px;
+  margin: 14px auto 0 auto;
+  padding: 0;
+  text-align: center;
+}
+
+.boot-pulse {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 6px 6px 0 6px;
+  border-radius: 12px;
+  background: #7adfff;
+  opacity: 0.48;
+  animation: fl-pulse-dot 1.05s ease-in-out infinite both;
+}
+
+.dot-1 { animation-delay: 0ms; }
+.dot-2 { animation-delay: 160ms; }
+.dot-3 { animation-delay: 320ms; }
