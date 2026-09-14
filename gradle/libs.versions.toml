@@ -6,8 +6,8 @@ skySimulation = "1.4.4"
 jackson = "2.22.0"
 gson = "2.14.0"
 luaj = "3.0.1"
-slf4j = "2.0.18"
-log4j = "2.26.0"
+slf4j = "2.0.19"
+log4j = "2.26.1"
 jansi = "2.4.3"
 
 [libraries]
